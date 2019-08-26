@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v.
+    2.0 with a Healthcare Disclaimer.
+    A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+    be found under the top level directory, named LICENSE.
+    If a copy of the MPL was not distributed with this file, You can obtain one at
+    http://mozilla.org/MPL/2.0/.
+    If a copy of the Healthcare Disclaimer was not distributed with this file, You
+    can obtain one at the project website https://github.com/igia.
+
+    Copyright (C) 2018-2019 Persistent Systems, Inc.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.igia.i2b2.cdi</groupId>
+    <artifactId>clinical-data-infrastructure</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>clinical-data-infrastructure</name>
+    <description>Clinical Data Infrastructure</description>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.0.5.RELEASE</version>
+        <relativePath/>
+    </parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-batch</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-integration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-file</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-sftp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-integration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.liquibase/liquibase-core -->
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+        </dependency>
+        <dependency>
+        	<groupId>org.springframework.boot</groupId>
+        	<artifactId>spring-boot-configuration-processor</artifactId>
+        	<optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>5.2</version>
+        </dependency>
+        <dependency>
+		    <groupId>javax.validation</groupId>
+		    <artifactId>validation-api</artifactId>
+		    <version>2.0.1.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate.validator</groupId>
+	     	<artifactId>hibernate-validator</artifactId>
+	     	<version>6.0.13.Final</version>
+	 	</dependency>
+		<dependency>
+		    <groupId>org.apache.tomcat.embed</groupId>
+		    <artifactId>tomcat-embed-el</artifactId>
+		    <version>9.0.22</version>
+		</dependency>
+		<dependency>
+    		<groupId>org.zeroturnaround</groupId>
+    		<artifactId>zt-zip</artifactId>
+    		<version>1.13</version>
+    		<type>jar</type>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.commons</groupId>
+		    <artifactId>commons-csv</artifactId>
+		    <version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jettison</groupId>
+			<artifactId>jettison</artifactId>
+			<version>1.4.0</version>
+		</dependency>
+  	</dependencies>
+    <url>https://gitlab.partners.org/igia-platform/i2b2-cdi-ext/</url>
+    <licenses>
+        <license>
+            <name>Mozilla Public License, version 2.0</name>
+	    <url>https://gitlab.partners.org/igia-platform/i2b2-cdi-ext/raw/develop/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <organization>
+        <name>igia</name>
+        <url>http://gitlab.partners.org</url>
+    </organization>
+    <developers>
+        <developer>
+            <id>igia</id>
+            <name>igia development team</name>
+            <url>https//gitlab.partners.org/</url>
+            <organization>igia</organization>
+            <organizationUrl>https://gitlab.partners.org/</organizationUrl>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:https://gitlab.partners.org/igia-platform/</connection>
+        <url>https://gitlab.partners.org/igia-platform/</url>
+    </scm>
+    <repositories>
+        <repository>
+            <id>igia-group-repository</id>
+            <name>igia Maven Repository Group</name>
+	    <url>https://ppm-nexus.partners.org/nexus/content/groups/igia-group/</url>
+        </repository>
+    </repositories>
+    <distributionManagement>
+            <snapshotRepository>
+                <id>nexus-snapshots</id>
+                <url>https://ppm-nexus.partners.org/nexus/content/repositories/igia-snapshots/</url>
+            </snapshotRepository>
+            <repository>
+                <id>nexus-releases</id>
+                <url>https://ppm-nexus.partners.org/nexus/content/repositories/igia-releases/</url>
+            </repository>
+    </distributionManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+			    <groupId>com.mycila</groupId>
+			    <artifactId>license-maven-plugin</artifactId>
+			    <version>3.0</version>
+			    <configuration>
+			        <header>HEADER</header>
+			
+			        <includes>
+			            <include>**/*.*</include>
+			        </includes>
+			        <excludes>
+			            <exclude>target/**/*</exclude>
+			            <exclude>.mvn/**/*</exclude>
+			            <exclude>.settings/**/*</exclude>
+			            <exclude>.vscode/**/*</exclude>
+			            <exclude>**/*.md</exclude>
+			            <exclude>**/*.csv</exclude>
+			            <exclude>**/*.p12</exclude>
+			            <exclude>**/robots.txt</exclude>
+			            <exclude>**/banner.txt</exclude>
+			            <exclude>**/manifest.*</exclude>
+			            <exclude>**/.dockerignore</exclude>
+			            <exclude>LICENSE</exclude>
+			            <exclude>HEADER</exclude>
+			            <exclude>.gitattributes</exclude>
+			            <exclude>.huskyrc</exclude>
+			            <exclude>.prettierrc</exclude>
+			            <exclude>.prettierignore</exclude>
+			            <exclude>.factorypath</exclude>
+			            <exclude>mvnw.cmd</exclude>
+			            <!-- bypass temporary files created during Jenkins build -->
+                        	    <exclude>env.txt</exclude>
+			        </excludes>
+			        <mapping>
+			            <scss>JAVADOC_STYLE</scss>
+			            <ts>SLASHSTAR_STYLE</ts>
+			            <feature>SCRIPT_STYLE</feature>
+			            <cmmn>XML_STYLE</cmmn>
+			            <dmn>XML_STYLE</dmn>
+			            <conf>SCRIPT_STYLE</conf>
+			        </mapping>
+			    </configuration>
+			    <executions>
+			        <execution>
+			            <goals>
+			                <goal>check</goal>
+			            </goals>
+			        </execution>
+			    </executions>
+			</plugin>
+		</plugins>
+	</build>
+  <modules>
+    <module>common</module>
+    <module>concept-import</module>
+    <module>data-import</module>
+    <module>i2b2-cdi-app</module>
+  </modules>
+</project>

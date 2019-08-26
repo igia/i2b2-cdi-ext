@@ -1,0 +1,124 @@
+#
+# This Source Code Form is subject to the terms of the Mozilla Public License, v.
+# 2.0 with a Healthcare Disclaimer.
+# A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+# be found under the top level directory, named LICENSE.
+# If a copy of the MPL was not distributed with this file, You can obtain one at
+# http://mozilla.org/MPL/2.0/.
+# If a copy of the Healthcare Disclaimer was not distributed with this file, You
+# can obtain one at the project website https://github.com/igia.
+#
+# Copyright (C) 2018-2019 Persistent Systems, Inc.
+#
+
+version: '3'
+
+services:
+
+  i2b2-web:
+    image: i2b2/i2b2-web:p1
+    ports:
+      - "80:80"
+      - "443:443"
+    command: /run-httpd.sh localhost
+    networks:
+      - i2b2net
+    depends_on:
+      - i2b2-wildfly
+
+
+  i2b2-wildfly:
+    image: i2b2/i2b2-wildfly:release-v1.7.10.0001
+    ports:
+      - "8080:8080"
+      - "9990:9990"
+    networks:
+      - i2b2net
+    depends_on:
+      - i2b2-pg
+
+
+  i2b2-pg:
+    image: i2b2/i2b2-pg:p1
+    ports:
+      - "5432:5432"
+    networks:
+      - i2b2net
+
+  i2b2-python-delete-data:
+    image: i2b2/i2b2-python-delete-data:0.1
+    stdin_open: true
+    tty: true
+    command: "python delete_all_data.py "
+    environment:
+      - I2B2_DB_HOST=localhost 
+    networks:
+      - i2b2net
+    depends_on:
+      - i2b2-pg
+
+  i2b2-cdi-sftp:
+    image: atmoz/sftp
+    container_name:  i2b2-cdi-sftp
+#    volumes:
+#       - "./sftpdata/concept:/home/${SFTP_USER:-i2b2sftpuser}/concept"
+#       - "./sftpdata/data:/home/${SFTP_USER:-i2b2sftpuser}/data"
+    ports:
+      - "2222:22"
+    networks:
+      - i2b2net
+    command: ${SFTP_USER:-i2b2sftpuser}:${SFTP_PASS:-i2b2sftppass}:1001::concept,data
+
+
+  i2b2-cdi-pg:
+    image: postgres:9.6.5
+    container_name:  i2b2-cdi-pg
+#   volumes:
+#     - ~/volumes/postgresql/:/var/lib/postgresql/data/
+    networks:
+      - i2b2net
+    environment:
+      - POSTGRES_USER=igia
+      - POSTGRES_PASSWORD=igiaPwd
+      - POSTGRES_DB=clinical_data_infrastructure
+#   ports:
+#     - "4432:5432"
+
+  i2b2-cdi-app:
+        image: i2b2/i2b2-cdi-app
+        container_name: i2b2-cdi-app
+        environment:
+            - SPRING_PROFILES_ACTIVE=prod
+            - APP_DATASOURCE_POSTGRESQL_URL=jdbc:postgresql://i2b2-cdi-pg:5432/clinical_data_infrastructure
+            - APP_DATASOURCE_POSTGRESQL_USERNAME=igia
+            - APP_DATASOURCE_POSTGRESQL_PASSWORD=igiaPwd
+            - APP_DATASOURCE_POSTGRESQL_DRIVER=com.zaxxer.hikari.HikariDataSource
+
+            - APP_DATASOURCE_I2B2_URL=jdbc:postgresql://i2b2-pg:5432/i2b2
+            - APP_DATASOURCE_I2B2_USERNAME=i2b2
+            - APP_DATASOURCE_I2B2_PASSWORD=demouser
+            - APP_DATASOURCE_I2B2_DRIVER=com.zaxxer.hikari.HikariDataSource
+
+            - APP_LOGGING_LOGSTASH_ENABLED=false
+            - APP_LOGGING_LOGSTASH_METRICSENABLED=false
+
+            - INTEGRATION_SFTP_REMOTEDIRPATHCONCEPT=/concept/
+            - INTEGRATION_SFTP_REMOTEDIRPATHDATA=/data/
+            - INTEGRATION_SFTP_LOCALDIRPATHCONCEPT=/opt/igia/concept/
+            - INTEGRATION_SFTP_LOCALDIRPATHDATA=/opt/igia/data/
+            - INTEGRATION_SFTP_HOST=i2b2-cdi-sftp
+            - INTEGRATION_SFTP_PORT=22
+            - INTEGRATION_SFTP_USER=${SFTP_USER:-i2b2sftpuser}
+            - INTEGRATION_SFTP_PASSWORD=${SFTP_PASS:-i2b2sftppass}
+        volumes:
+            - /opt/igia/concept
+            - /opt/igia/data
+        depends_on:
+            - i2b2-cdi-pg
+            - i2b2-cdi-sftp
+        networks:
+            - i2b2net  
+
+networks: 
+    i2b2net:
+       driver: bridge

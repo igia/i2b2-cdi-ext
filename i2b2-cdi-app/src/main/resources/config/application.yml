@@ -1,0 +1,66 @@
+#
+# This Source Code Form is subject to the terms of the Mozilla Public License, v.
+# 2.0 with a Healthcare Disclaimer.
+# A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+# be found under the top level directory, named LICENSE.
+# If a copy of the MPL was not distributed with this file, You can obtain one at
+# http://mozilla.org/MPL/2.0/.
+# If a copy of the Healthcare Disclaimer was not distributed with this file, You
+# can obtain one at the project website https://github.com/igia.
+#
+# Copyright (C) 2018-2019 Persistent Systems, Inc.
+#
+
+#Core vars
+spring:
+    application:
+        name: Clinical Data Infrastructure
+    batch:
+        initialize-schema: always
+        job:
+            enabled: false
+            commitInterval : 1000
+            jdbcCursorReaderFetchSize: 1000
+            validationFailSkipLimit: 100
+    
+    profiles:
+      active: #spring.profiles.active#
+
+server:
+    port: 5002
+
+info:
+    project:
+        version: 1.0
+
+#I2b2 schema tables default values
+i2b2:
+    schema:
+        synonymCd: N
+        factTableColumn: concept_cd
+        tableName: concept_dimension
+        columnName: concept_path
+        columnDataType: T
+        operator: LIKE
+        tableAccessCd: i2b2_DEMO
+        tableAccessName: I2B2
+        protectedAccess: N
+        i2b2Separator: \
+        conceptPath: concept_path
+        appliedPath: \@
+        
+#SFTP Configuration Details
+integration:
+    sftp:
+        pollersFixedDelay: 5000
+        regexFilter: .*\.zip
+        pollersFixedRate: 1000
+        maxMessagesPerPoll: 1
+        correlationExpression: 1
+        appGroupTimeout: 3600000
+        dataFileReleaseExpression: size() == 1
+        conceptFileReleaseExpression: size() == 1
+        
+app:
+    log:
+        errorLogFileExtension: .log

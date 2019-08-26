@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v.
+    2.0 with a Healthcare Disclaimer.
+    A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+    be found under the top level directory, named LICENSE.
+    If a copy of the MPL was not distributed with this file, You can obtain one at
+    http://mozilla.org/MPL/2.0/.
+    If a copy of the Healthcare Disclaimer was not distributed with this file, You
+    can obtain one at the project website https://github.com/igia.
+
+    Copyright (C) 2018-2019 Persistent Systems, Inc.
+
+-->
+
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+	<changeSet id="123a" author="igia">
+		<createTable tableName="concepts">
+			<column name="id" type="Bigserial" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="concept_code" type="varchar(50)" />
+			<column name="concept_path" type="varchar(700)" />
+			<column name="metadata_xml" type="text"></column>
+			<column name="facttable_column" type="varchar(50)"></column>
+			<column name="table_name" type="varchar(50)"></column>
+			<column name="column_name" type="varchar(50)"></column>
+			<column name="column_datatype" type="varchar(50)"></column>
+			<column name="operator" type="varchar(10)"></column>
+			<column name="dimcode" type="varchar(700)"></column>
+		</createTable>
+	</changeSet>
+	<changeSet id="123b" author="igia">
+		<createTable tableName="nhp_patient_demographics">
+			<column name="id" type="Bigserial" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="patient_ide" type="varchar(200)">
+				<constraints unique="true" uniqueConstraintName="nhp_patient_demographics_patient_id_uk"/>
+			</column>
+			<column name="birth_dts" type="varchar(50)" />
+			<column name="gender" type="varchar(50)"></column>
+			<column name="patient_num" type="int" />
+		</createTable>
+		<createIndex tableName="nhp_patient_demographics" indexName="nhp_patient_demographics_patient_id_index">
+			<column name="patient_ide"></column>
+		</createIndex>
+	</changeSet>
+	<changeSet id="123c" author="igia">
+		<createTable tableName="nhp_patient_encounters">
+			<column name="id" type="Bigserial" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="encounter_ide" type="varchar(200)" />
+			<column name="patient_ide" type="varchar(200)" />
+			<column name="start_date" type="varchar(50)" />
+			<column name="end_date" type="varchar(50)" />
+		</createTable>
+	</changeSet>
+	<changeSet id="123f" author="igia">
+		<createTable tableName="nhp_patient_provider_reference">
+			<column name="id" type="Bigserial" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="provider_id" type="varchar(50)" />
+			<column name="provider_path" type="varchar(700)"></column>
+			<column name="user_nm" type="varchar(850)" />
+		</createTable>
+	</changeSet>
+	<changeSet id="123g" author="igia">
+		<createTable tableName="nhp_observation_facts">
+			<column name="id" type="Bigserial" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="encounter_id" type="varchar(200)" />
+			<column name="patient_id" type="varchar(2000)" />
+			<column name="concept_cd" type="varchar(50)" />
+			<column name="provider_id" type="varchar(50)" />
+			<column name="start_date" type="varchar(50)" />
+			<column name="modifier_cd" type="varchar(100)" />
+			<column name="instance_num" type="varchar(10)" />
+			<column name="value" type="varchar(255)" />
+			<column name="unit_cd" type="varchar(50)" />
+		</createTable>
+	</changeSet>
+	<changeSet id="123d" author="igia">
+		<createTable tableName="concept_mapping">
+			<column name="id" type="Bigserial" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="std_cd" type="varchar(50)" />
+			<column name="local_cd" type="varchar(50)" />
+			<column name="local_cd_name" type="varchar(100)" />
+		</createTable>
+	</changeSet>
+</databaseChangeLog>

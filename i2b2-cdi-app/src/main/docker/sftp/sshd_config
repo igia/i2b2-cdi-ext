@@ -1,0 +1,8 @@
+UseDNS no
+PermitRootLogin no
+X11Forwarding no
+AllowTcpForwarding no
+Subsystem sftp internal-sftp
+Match User admin
+	ChrootDirectory /home/admin
+	ForceCommand internal-sftp
