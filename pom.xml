@@ -18,7 +18,7 @@
 
     <groupId>io.igia.i2b2.cdi</groupId>
     <artifactId>clinical-data-infrastructure</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.3.1</version>
     <packaging>pom</packaging>
 
     <name>clinical-data-infrastructure</name>
@@ -34,7 +34,13 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
+	<java.version>1.8</java.version>
+	<!-- Plugin versions -->
+        <sonar-maven-plugin.version>3.5.0.1254</sonar-maven-plugin.version>
+        <maven-surefire-plugin.version>2.21.0</maven-surefire-plugin.version>
+        <maven-javadoc-plugin.version>3.0.1</maven-javadoc-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
 	</properties>
 
 	<dependencies>
@@ -119,51 +125,64 @@
 			<version>1.4.0</version>
 		</dependency>
   	</dependencies>
-    <url>https://gitlab.partners.org/igia-platform/i2b2-cdi-ext/</url>
+    <url>https://github.com/igia/i2b2-cdi-ext/</url>
     <licenses>
         <license>
             <name>Mozilla Public License, version 2.0</name>
-	    <url>https://gitlab.partners.org/igia-platform/i2b2-cdi-ext/raw/develop/LICENSE</url>
+	    <url>https://github.com/igia/i2b2-cdi-ext/raw/master/LICENSE</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
     <organization>
         <name>igia</name>
-        <url>http://gitlab.partners.org</url>
+        <url>http://igia.io</url>
     </organization>
     <developers>
         <developer>
             <id>igia</id>
             <name>igia development team</name>
-            <url>https//gitlab.partners.org/</url>
+            <url>http://igia.io/</url>
             <organization>igia</organization>
-            <organizationUrl>https://gitlab.partners.org/</organizationUrl>
+            <organizationUrl>http://igia.io/</organizationUrl>
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:https://gitlab.partners.org/igia-platform/</connection>
-        <url>https://gitlab.partners.org/igia-platform/</url>
+        <connection>scm:git:https://github.com/igia/i2b2-cdi-ext/</connection>
+	<url>https://github.com/igia/i2b2-cdi-ext/</url>
     </scm>
     <repositories>
-        <repository>
-            <id>igia-group-repository</id>
-            <name>igia Maven Repository Group</name>
-	    <url>https://ppm-nexus.partners.org/nexus/content/groups/igia-group/</url>
-        </repository>
+		<repository>
+			<id>nexus-public</id>
+			<url> https://oss.sonatype.org/content/groups/public/</url>
+		</repository>
+		<repository>
+			<id>nexus-staging</id>
+			<url> https://oss.sonatype.org/content/groups/staging/</url>
+		</repository>
     </repositories>
     <distributionManagement>
-            <snapshotRepository>
-                <id>nexus-snapshots</id>
-                <url>https://ppm-nexus.partners.org/nexus/content/repositories/igia-snapshots/</url>
-            </snapshotRepository>
-            <repository>
-                <id>nexus-releases</id>
-                <url>https://ppm-nexus.partners.org/nexus/content/repositories/igia-releases/</url>
-            </repository>
+		<snapshotRepository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+		</snapshotRepository>
+		<repository>
+			<id>ossrh</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+		</repository>
     </distributionManagement>
 
 	<build>
-		<plugins>
+	<plugins>
+            <!-- skip depoyment of this aggregate pom -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                <skip>true</skip>
+                </configuration>
+            </plugin>
+
 			<plugin>
 			    <groupId>com.mycila</groupId>
 			    <artifactId>license-maven-plugin</artifactId>
@@ -221,5 +240,5 @@
     <module>concept-import</module>
     <module>data-import</module>
     <module>i2b2-cdi-app</module>
-  </modules>
+ </modules>
 </project>
