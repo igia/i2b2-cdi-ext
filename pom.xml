@@ -18,7 +18,7 @@
 
     <groupId>io.igia.i2b2.cdi</groupId>
     <artifactId>clinical-data-infrastructure</artifactId>
-    <version>0.3.1</version>
+    <version>0.3.3</version>
     <packaging>pom</packaging>
 
     <name>clinical-data-infrastructure</name>
