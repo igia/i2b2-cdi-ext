@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.config;
 
@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -95,6 +96,7 @@ public class LaunchConfiguration {
 	public JobLauncher jobLauncher() throws Exception {
 		SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
 		jobLauncher.setJobRepository(jobRepository());
+		jobLauncher.setTaskExecutor(new SimpleAsyncTaskExecutor());
 		return jobLauncher;
 	}
 

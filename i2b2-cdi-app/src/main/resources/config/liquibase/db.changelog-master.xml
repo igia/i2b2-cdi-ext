@@ -10,7 +10,7 @@
     If a copy of the Healthcare Disclaimer was not distributed with this file, You
     can obtain one at the project website https://github.com/igia.
 
-    Copyright (C) 2018-2019 Persistent Systems, Inc.
+    Copyright (C) 2021-2022 Persistent Systems, Inc.
 
 -->
 
@@ -98,4 +98,26 @@
 			<column name="local_cd_name" type="varchar(100)" />
 		</createTable>
 	</changeSet>
+	<changeSet id="123e" author="igia">
+		<addColumn tableName="concepts">
+			<column name="m_applied_path" type="varchar(700)"></column>
+			<column name="m_exclusion_cd" type="varchar(10)"></column>
+		</addColumn>
+	</changeSet>
+    <changeSet id="123h" author="igia">
+        <createTable tableName="derived_concept_definition">
+            <column name="id" type="Bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="concept_path" type="varchar(700)" />
+            <column name="description" type="text" />
+            <column name="sql_query" type="text" />
+            <column name="unit_cd" type="varchar(50)" />
+        </createTable>
+    </changeSet>
+    <changeSet id="123i" author="igia">
+        <addColumn tableName="derived_concept_definition" >
+            <column name="parent_concept_path" type="text" afterColumn="concept_path" ></column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

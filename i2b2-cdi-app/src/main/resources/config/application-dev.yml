@@ -8,7 +8,7 @@
 # If a copy of the Healthcare Disclaimer was not distributed with this file, You
 # can obtain one at the project website https://github.com/igia.
 #
-# Copyright (C) 2018-2019 Persistent Systems, Inc.
+# Copyright (C) 2021-2022 Persistent Systems, Inc.
 #
 
 #Local Postgres Data Source properties
@@ -16,16 +16,27 @@ app:
     datasource:
         postgresql:
             url: jdbc:postgresql://localhost:5432/clinical_data_infrastructure
-            username: 
-            password: 
+            username: hip
+            password: hip
             driver: org.postgresql.Driver
 
         #I2b2 Postgres meta Source properties
-        i2b2:
-            url: 
-            username: 
-            password: 
-            driver: org.postgresql.Driver
+        i2b2-db-metainfo:
+            demodataSchemaName: 
+            metadataSchemaName: 
+            
+        i2b2demodata:
+            url: jdbc:sqlserver://localhost:1432;databaseName=i2b2demodata
+            username: i2b2demodata
+            password: Demouser123
+            driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
+            
+        i2b2metadata:
+            url: jdbc:sqlserver://localhost:1432;databaseName=i2b2metadata
+            username: i2b2metadata
+            password: Demouser123
+            driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    
     logging:
         logstash:
             enabled: false
@@ -37,11 +48,11 @@ app:
 #SFTP Configuration Details
 integration:
     sftp:
-        remoteDirPathConcept: 
-        remoteDirPathData: 
-        localDirPathConcept: 
-        localDirPathData: 
-        host: 
-        port: 
-        user: 
-        password: 
+        remoteDirPathConcept: /concept/
+        remoteDirPathData: /data/
+        localDirPathConcept: /tmp/concept/
+        localDirPathData: /tmp/data/
+        host: localhost
+        port: 2222
+        user: i2b2sftpuser
+        password: i2b2sftppass

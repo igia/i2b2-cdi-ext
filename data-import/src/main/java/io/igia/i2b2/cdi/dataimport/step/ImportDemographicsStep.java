@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.step;
 
@@ -39,15 +39,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 
-import io.igia.i2b2.cdi.dataimport.processor.DemographicsProcessor;
-import io.igia.i2b2.cdi.common.JobListener.CustomSkipListener;
 import io.igia.i2b2.cdi.common.cache.PatientMappingCache;
 import io.igia.i2b2.cdi.common.cache.PatientNextValCache;
 import io.igia.i2b2.cdi.common.config.AppBatchProperties;
 import io.igia.i2b2.cdi.common.domain.CsvDemographics;
 import io.igia.i2b2.cdi.common.domain.DataFileName;
+import io.igia.i2b2.cdi.common.domain.DataJobStepName;
+import io.igia.i2b2.cdi.common.exception.PatientAlreadyExistsException;
 import io.igia.i2b2.cdi.common.helper.PatientHelper;
 import io.igia.i2b2.cdi.common.reader.CustomFlatFileReader;
 import io.igia.i2b2.cdi.common.reader.CustomJdbcItemReader;
@@ -56,6 +57,9 @@ import io.igia.i2b2.cdi.common.util.CustomBeanValidator;
 import io.igia.i2b2.cdi.common.util.TableFields;
 import io.igia.i2b2.cdi.common.writer.CustomFlatFileWriter;
 import io.igia.i2b2.cdi.common.writer.CustomJdbcBatchItemWriter;
+import io.igia.i2b2.cdi.dataimport.joblistener.DemographicSkipListener;
+import io.igia.i2b2.cdi.dataimport.joblistener.I2b2DemographicSkipListener;
+import io.igia.i2b2.cdi.dataimport.processor.DemographicsProcessor;
 
 @Configuration
 public class ImportDemographicsStep {
@@ -85,6 +89,9 @@ public class ImportDemographicsStep {
 	@Autowired
 	CustomBeanValidator customBeanValidator;
 	
+	@Autowired
+	PatientHelper patientHelper;
+	
 	private static final String FILE_NAME = DataFileName.PATIENT_DIMENSIONS.getFileName();
 		
 	// Load from csv into intermediate database...
@@ -108,15 +115,14 @@ public class ImportDemographicsStep {
 	public FlatFileItemWriter<CsvDemographics> demographicsSkippedRecordsWriter(@Value("#{jobParameters['ERROR_RECORDS_DIRECTORY_PATH']}") String filePath) {
 		String fileName = DataFileName.PATIENT_DIMENSIONS_SKIPPED_RECORDS.getFileName();
 		return CustomFlatFileWriter.getWriter("demographicsSkippedRecordsWriter", filePath + fileName,
-				CsvHeaders.getDemographicHeaders());
+				CsvHeaders.getDemographicErrorRecordHeaders());
 	}
 	
 	@Bean
 	public Step intermediateDBImportDemographicsStep() {
-		CustomSkipListener<CsvDemographics, CsvDemographics> skipListener = new CustomSkipListener<>();
-		skipListener.setFlatFileItemWriter(demographicsSkippedRecordsWriter(""));
+		DemographicSkipListener skipListener = new DemographicSkipListener(demographicsSkippedRecordsWriter(""));
 		
-		return stepBuilderFactory.get("intermediateDBImportDemographicsStep")
+		return stepBuilderFactory.get(DataJobStepName.IMPORT_CSV_PATIENT_DIMENSION_STEP)
 				.<CsvDemographics, CsvDemographics>chunk(batchProperties.getCommitInterval())
 				.reader(csvDemographicsReader(""))
 				.processor(customBeanValidator.validator())
@@ -124,6 +130,7 @@ public class ImportDemographicsStep {
 				.faultTolerant()
                 .skipLimit(Integer.MAX_VALUE)
                 .skip(FlatFileParseException.class)
+                .skip(DuplicateKeyException.class)
                 .skip(ValidationException.class)
                 .listener(skipListener)
                 .stream(demographicsSkippedRecordsWriter(""))
@@ -154,7 +161,7 @@ public class ImportDemographicsStep {
 	
 	@Bean
 	public DemographicsProcessor demographicsProcessor() {
-		DemographicsProcessor demographicProcessor = new DemographicsProcessor();
+		DemographicsProcessor demographicProcessor = new DemographicsProcessor(patientHelper);
 		demographicProcessor.setDataSource(i2b2DemoDataSource);
 		demographicProcessor.setPatientCache(patientMappingCache);
 		demographicProcessor.setPatientNextValueCache(patientNextValCache);
@@ -163,12 +170,12 @@ public class ImportDemographicsStep {
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvDemographics> i2b2DemographicsPatientMappingWriter() {
-		return PatientHelper.getI2b2PatientMappingWriter(i2b2DemoDataSource);
+		return patientHelper.getI2b2PatientMappingWriter(i2b2DemoDataSource);
 	}
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvDemographics> i2b2DemographicsPatientDimensionWriter() {		
-		return PatientHelper.getI2b2PatientDimensionWriter(i2b2DemoDataSource);
+		return patientHelper.getI2b2PatientDimensionWriter(i2b2DemoDataSource);
 	}
 	
 	@Bean
@@ -183,11 +190,19 @@ public class ImportDemographicsStep {
 	
 	@Bean
 	public Step i2b2ImportDemographicsStep() throws Exception {
-		return i2b2StepBuilderFactory.get("i2b2ImportDemographicsStep")
+	    I2b2DemographicSkipListener skipListener = new I2b2DemographicSkipListener(demographicsSkippedRecordsWriter(""));
+	    
+		return i2b2StepBuilderFactory.get(DataJobStepName.IMPORT_I2B2_PATIENT_DIMENSION_STEP)
 				.<CsvDemographics, CsvDemographics>chunk(batchProperties.getCommitInterval())
 				.reader(intermediateDBDemographicsReader())
 				.processor(demographicsProcessor())
 				.writer(demographicsWriter())
+				.faultTolerant()
+                .skipLimit(Integer.MAX_VALUE)
+                .skip(DuplicateKeyException.class)
+                .skip(PatientAlreadyExistsException.class)
+                .listener(skipListener)
+                .stream(demographicsSkippedRecordsWriter(""))
 				.build();
 	}
 }

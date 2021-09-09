@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.JobListener;
 
@@ -50,11 +50,11 @@ public class JobCompletionNotification {
 			Iterator<StepExecution> iteratorStepExecution = jobExecution.getStepExecutions().iterator();
 			while(iteratorStepExecution.hasNext()) {
 				StepExecution stepExecution = iteratorStepExecution.next();
-				log.debug(stepExecution.toString());
+				log.info("{}", stepExecution);
 			}
 		} catch (Exception e) {
 			log.error("Exception reading job statistics! : {}", jobExecution );
-			log.error( e.getMessage());
+			log.error("{}", e);
 		}
 	}
 }

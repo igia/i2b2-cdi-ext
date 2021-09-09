@@ -1,0 +1,133 @@
+version: '3.2'
+#
+# This Source Code Form is subject to the terms of the Mozilla Public License, v.
+# 2.0 with a Healthcare Disclaimer.
+# A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+# be found under the top level directory, named LICENSE.
+# If a copy of the MPL was not distributed with this file, You can obtain one at
+# http://mozilla.org/MPL/2.0/.
+# If a copy of the Healthcare Disclaimer was not distributed with this file, You
+# can obtain one at the project website https://github.com/igia.
+#
+# Copyright (C) 2021-2022 Persistent Systems, Inc.
+#
+
+services:
+    i2b2-cdi-app:
+        image: i2b2/i2b2-cdi-app:latest
+        container_name: i2b2-cdi-app
+        volumes:
+            - "./resources/wait-for-it.sh:/wait-for-it.sh"
+        command:
+            - /bin/sh -c "apk add --no-cache bash"
+            - /bin/bash -c "chmod +x /wait-for-it.sh && ./wait-for-it.sh --strict --quiet"
+        environment:
+            - 'SPRING_PROFILES_ACTIVE=${I2B2_SPRING_PROFILES_ACTIVE:-prod}'
+            - 'APP_DATASOURCE_POSTGRESQL_URL=jdbc:postgresql://i2b2-cdi-pg:${I2B2_CDI_POSTGRESQL_PORT:-5432}/clinical_data_infrastructure'
+            - 'APP_DATASOURCE_POSTGRESQL_USERNAME=${I2B2_POSTGRESQL_DATASOURCE_USERNAME:-igia}'
+            - 'APP_DATASOURCE_POSTGRESQL_PASSWORD=${I2B2_POSTGRESQL_DATASOURCE_PASSWORD:-igiaPwd}'
+            - 'APP_DATASOURCE_POSTGRESQL_DRIVER=org.postgresql.Driver'
+            - 'APP_DATASOURCE_I2B2-DB-METAINFO_DEMODATASCHEMANAME='
+            - 'APP_DATASOURCE_I2B2-DB-METAINFO_METADATASCHEMANAME='
+            - 'APP_DATASOURCE_I2B2DEMODATA_URL=jdbc:sqlserver://i2b2-mssql:${I2B2_MSSQL_PORT:-1433};databaseName=i2b2demodata'
+            - 'APP_DATASOURCE_I2B2DEMODATA_USERNAME=${I2B2DEMODATA_DATASOURCE_USERNAME:-i2b2demodata}'
+            - 'APP_DATASOURCE_I2B2DEMODATA_PASSWORD=${I2B2DEMODATA_DATASOURCE_PASSWORD:-Demouser123}'
+            - 'APP_DATASOURCE_I2B2DEMODATA_DRIVER=com.microsoft.sqlserver.jdbc.SQLServerDriver'
+            - 'APP_DATASOURCE_I2B2METADATA_URL=jdbc:sqlserver://i2b2-mssql:${I2B2_MSSQL_PORT:-1433};databaseName=i2b2metadata'
+            - 'APP_DATASOURCE_I2B2METADATA_USERNAME=${I2B2METADATA_DATASOURCE_USERNAME:-i2b2metadata}'
+            - 'APP_DATASOURCE_I2B2METADATA_PASSWORD=${I2B2METADATA_DATASOURCE_PASSWORD:-Demouser123}'
+            - 'APP_DATASOURCE_I2B2METADATA_DRIVER=com.microsoft.sqlserver.jdbc.SQLServerDriver'
+            - 'APP_LOGGING_LOGSTASH_ENABLED=false'
+            - 'APP_LOGGING_LOGSTASH_METRICSENABLED=false'
+            - 'INTEGRATION_SFTP_REMOTEDIRPATHCONCEPT=/home/${SFTP_USER:-i2b2sftpuser}/concept'
+            - 'INTEGRATION_SFTP_REMOTEDIRPATHDATA=/home/${SFTP_USER:-i2b2sftpuser}/data'
+            - 'INTEGRATION_SFTP_LOCALDIRPATHCONCEPT=${I2B2_SFTP_LOCAL_CONCEPT_DIR:-~/i2b2-cdi-ext/concept/}'
+            - 'INTEGRATION_SFTP_LOCALDIRPATHDATA=${I2B2_SFTP_LOCAL_DATA_DIR:-~/i2b2-cdi-ext/data/}'
+            - 'INTEGRATION_SFTP_HOST=i2b2-cdi-sftp'
+            - 'INTEGRATION_SFTP_PORT=22'
+            - 'INTEGRATION_SFTP_USER=${SFTP_USER:-i2b2sftpuser}'
+            - 'INTEGRATION_SFTP_PASSWORD=${SFTP_PASS:-i2b2sftppass}'
+            - 'SPRING_BATCH_JOB_ENABLENOTEXISTSCLAUSE=false'
+            - 'WAIT_FOR=i2b2-mssql:${I2B2_MSSQL_PORT:-1433}'
+            - 'WAIT_FOR_TIMEOUT=60'
+        volumes:
+            - '${I2B2_SFTP_LOCAL_CONCEPT_DIR:-~/i2b2-cdi-ext/concept/}'
+            - '${I2B2_SFTP_LOCAL_DATA_DIR:-~/i2b2-cdi-ext/data/}'
+        depends_on:
+            - '${I2B2_COMMONS_DATASOURCE_SERVICE:-i2b2-mssql}'
+            - i2b2-cdi-pg
+            - i2b2-cdi-sftp
+        restart: unless-stopped
+        networks:
+            - 'i2b2net'
+
+    i2b2-wildfly:
+        image: i2b2/i2b2-wildfly:works_with_mssql_first_working
+        container_name: i2b2-wildfly
+        ports:
+            - "${I2B2_WILDFLY_PORT:-8080}:8080"
+            - "${I2B2_WILDFLY_MANAGEMENT_PORT:-9990}:9990"
+        depends_on:
+            - '${I2B2_COMMONS_DATASOURCE_SERVICE:-i2b2-mssql}'
+        networks:
+            - 'i2b2net'
+
+    i2b2-mssql-vol-loader:
+        image: i2b2/i2b2-mssql-vol:third
+        container_name: i2b2-mssql-vol-loader
+        volumes:
+            - i2b2-mssql-vol:/var/opt/mssql
+        entrypoint: /bin/sh
+        networks:
+            - 'i2b2net'
+
+    i2b2-mssql:
+        image: mcr.microsoft.com/mssql/server:2017-latest
+        container_name: i2b2-mssql
+        volumes:
+            - i2b2-mssql-vol:/var/opt/mssql
+        ports:
+            - "${I2B2_MSSQL_PORT:-1433}:1433"
+        environment:
+            - 'ACCEPT_EULA=Y'
+            - 'SA_PASSWORD=${I2B2_DATASOURCE_PASSWORD:-<YourStrong@Passw0rd>}'
+        depends_on:
+            - i2b2-mssql-vol-loader        
+        networks:
+            - 'i2b2net'
+
+    i2b2-python-delete-data:
+        image: i2b2/i2b2-python-delete-data:0.2
+        build:
+          context: resources/
+        stdin_open: true
+        tty: true
+        volumes:
+            - "./resources/wait-for-it.sh:/wait-for-it.sh"
+        command: >
+                bash -c "chmod +x /wait-for-it.sh; /wait-for-it.sh i2b2-mssql:1433 -t 120 -s -q -- python delete_all_data_mssql.py"
+        environment:
+            - 'I2B2_DB_HOST=i2b2-mssql'
+            - 'WAIT_FOR=i2b2-pg:${I2B2_POSTGRESQL_PORT:-1433}'
+            - 'WAIT_FOR_TIMEOUT=120'
+        networks:
+            - i2b2net
+        restart: on-failure
+        depends_on:
+            - i2b2-mssql
+
+    i2b2-web:
+        networks:
+            - 'i2b2net'
+        depends_on:
+            - i2b2-wildfly
+
+volumes:
+    i2b2-mssql-vol:
+        driver: local
+
+networks:
+    i2b2net:
+        driver: bridge
+
+

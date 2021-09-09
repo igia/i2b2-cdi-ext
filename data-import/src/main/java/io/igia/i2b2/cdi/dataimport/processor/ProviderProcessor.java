@@ -8,15 +8,18 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.processor;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.file.FlatFileItemWriter;
 
 import io.igia.i2b2.cdi.common.cache.ProviderCache;
 import io.igia.i2b2.cdi.common.domain.AppJobContextProperties;
@@ -27,9 +30,12 @@ public class ProviderProcessor implements ItemProcessor<CsvProviderReference,Csv
 	
 	private ProviderCache providerCache;
 	private AppJobContextProperties appJobContextProperties;
+	private FlatFileItemWriter<CsvProviderReference> flatFileItemWriter;
+	private static final String DUPLICATE_PROVIDER = "Duplicate record";
 	
-	public void setProviderCache(ProviderCache providerCache) {
-		this.providerCache = providerCache;
+	public ProviderProcessor (ProviderCache providerCache, FlatFileItemWriter<CsvProviderReference> flatFileItemWriter) {
+	    this.providerCache = providerCache;
+	    this.flatFileItemWriter = flatFileItemWriter;
 	}
 	
 	@BeforeStep
@@ -42,7 +48,15 @@ public class ProviderProcessor implements ItemProcessor<CsvProviderReference,Csv
 	public CsvProviderReference process(CsvProviderReference item) throws Exception {
 		
 		if (providerCache.containsProvider(item.getProviderID())) {
-			return null;
+			List<CsvProviderReference> errProviders = new ArrayList<>();
+	        item.setValidationErrorMessage(DUPLICATE_PROVIDER);
+
+	        // Wrap all provider fields with double quotes as this fields is used to
+	        // write in to csv file
+	        CsvProviderReference provider = new CsvProviderReference().wrapConceptFieldsWithDoubleQuotes(item);
+	        errProviders.add(provider);
+	        flatFileItemWriter.write(errProviders);
+	        return null;
 		}
 		
 		providerCache.putData(item.getProviderID());

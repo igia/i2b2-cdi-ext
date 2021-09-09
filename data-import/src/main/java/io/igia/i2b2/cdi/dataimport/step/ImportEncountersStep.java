@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.step;
 
@@ -39,14 +39,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 
-import io.igia.i2b2.cdi.dataimport.processor.EncounterProcessor;
-import io.igia.i2b2.cdi.common.JobListener.CustomSkipListener;
 import io.igia.i2b2.cdi.common.cache.EncounterNextValCache;
 import io.igia.i2b2.cdi.common.cache.PatientMappingCache;
 import io.igia.i2b2.cdi.common.config.AppBatchProperties;
 import io.igia.i2b2.cdi.common.config.AppIntegrationProperties;
 import io.igia.i2b2.cdi.common.domain.CsvEncounter;
 import io.igia.i2b2.cdi.common.domain.DataFileName;
+import io.igia.i2b2.cdi.common.domain.DataJobStepName;
 import io.igia.i2b2.cdi.common.helper.EncounterHelper;
 import io.igia.i2b2.cdi.common.reader.CustomJdbcItemReader;
 import io.igia.i2b2.cdi.common.reader.EncounterFlatFileReader;
@@ -56,6 +55,8 @@ import io.igia.i2b2.cdi.common.util.TableFields;
 import io.igia.i2b2.cdi.common.writer.CustomFlatFileWriter;
 import io.igia.i2b2.cdi.common.writer.CustomJdbcBatchItemWriter;
 import io.igia.i2b2.cdi.common.writer.EncountersCompositeJdbcWriter;
+import io.igia.i2b2.cdi.dataimport.joblistener.EncounterSkipListener;
+import io.igia.i2b2.cdi.dataimport.processor.EncounterProcessor;
 
 
 @Configuration
@@ -87,6 +88,9 @@ public class ImportEncountersStep {
 	
 	@Autowired
 	CustomBeanValidator customBeanValidator;
+	
+	@Autowired
+	EncounterHelper encounterHelper;
 		
 	private static final String FILE_NAME = DataFileName.VISIT_DIMENSIONS.getFileName();
 	
@@ -116,15 +120,14 @@ public class ImportEncountersStep {
 	public FlatFileItemWriter<CsvEncounter> encountersSkippedRecordsWriter(@Value("#{jobParameters['ERROR_RECORDS_DIRECTORY_PATH']}") String filePath) {
 		String fileName = DataFileName.VISIT_DIMENSIONS_SKIPPED_RECORDS.getFileName();
 		return CustomFlatFileWriter.getWriter("encountersSkippedRecordsWriter", filePath + fileName,
-				CsvHeaders.getEncounterHeaders());
+				CsvHeaders.getEncounterErrorRecordHeaders());
 	}
 	
 	@Bean
 	public Step intermediateDBImportEncountersStep() {
-		CustomSkipListener<CsvEncounter, CsvEncounter> skipListener = new CustomSkipListener<>();
-		skipListener.setFlatFileItemWriter(encountersSkippedRecordsWriter(""));
+		EncounterSkipListener skipListener = new EncounterSkipListener(encountersSkippedRecordsWriter(""));
 		
-		return stepBuilderFactory.get("intermediateDBImportEncountersStep")
+		return stepBuilderFactory.get(DataJobStepName.IMPORT_CSV_ENCOUNTER_STEP)
 				.<CsvEncounter, CsvEncounter>chunk(batchProperties.getCommitInterval())
 				.reader(csvEncounterReader(""))
 				.processor(customBeanValidator.validator())
@@ -163,7 +166,7 @@ public class ImportEncountersStep {
 	
 	@Bean
 	public EncounterProcessor encounterProcessor() {
-		EncounterProcessor encounterProcessor = new EncounterProcessor();
+		EncounterProcessor encounterProcessor = new EncounterProcessor(encounterHelper);
 		encounterProcessor.setI2b2DataSource(i2b2DemoDataSource);
 		encounterProcessor.setEncounterNextValCache(encounterNextValCache);
 		encounterProcessor.setPatientMappingCache(patientMappingCache);
@@ -172,12 +175,12 @@ public class ImportEncountersStep {
 
 	@Bean
 	public JdbcBatchItemWriter<CsvEncounter> i2b2EncounterMappingWriter() {
-		return EncounterHelper.getI2b2EncounterMappingWriter(i2b2DemoDataSource);
+		return encounterHelper.getI2b2EncounterMappingWriter(i2b2DemoDataSource);
 	}
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvEncounter> i2b2EncounterWriter() {
-		return EncounterHelper.getI2b2VisitDimensionWriter(i2b2DemoDataSource);
+		return encounterHelper.getI2b2VisitDimensionWriter(i2b2DemoDataSource);
 	}	
 	
 	@Bean
@@ -194,7 +197,7 @@ public class ImportEncountersStep {
 
 	@Bean
 	public Step i2b2ImportEncountersStep() throws Exception {
-		return stepBuilderFactory.get("i2b2ImportEncountersStep")
+		return stepBuilderFactory.get(DataJobStepName.IMPORT_I2B2_ENCOUNTER_STEP)
 				.<CsvEncounter, CsvEncounter>chunk(batchProperties.getCommitInterval())
 				.reader(intermediateDBEncounterReader())
 				.processor(encounterProcessor())

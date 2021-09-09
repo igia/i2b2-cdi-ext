@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -39,7 +39,7 @@ public class I2b2Concept implements Serializable{
 	private String cTableCode;
 	private String cTableName;
 	private String cProtectedAccess;
-	
+	private String modifierExclusionCode;
 	public int getLevel() {
 		return level;
 	}
@@ -206,5 +206,13 @@ public class I2b2Concept implements Serializable{
 
 	public void setUploadId(Integer uploadId) {
 		this.uploadId = uploadId;
+	}
+
+	public String getModifierExclusionCode() {
+		return modifierExclusionCode;
+	}
+
+	public void setModifierExclusionCode(String modifierExclusionCode) {
+		this.modifierExclusionCode = modifierExclusionCode;
 	}
 }

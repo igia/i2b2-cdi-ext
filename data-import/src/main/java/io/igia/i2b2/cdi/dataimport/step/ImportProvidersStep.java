@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.step;
 
@@ -35,16 +35,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 
-import io.igia.i2b2.cdi.dataimport.processor.ProviderProcessor;
-import io.igia.i2b2.cdi.common.JobListener.CustomSkipListener;
 import io.igia.i2b2.cdi.common.cache.EncounterNextValCache;
 import io.igia.i2b2.cdi.common.cache.PatientMappingCache;
 import io.igia.i2b2.cdi.common.cache.ProviderCache;
 import io.igia.i2b2.cdi.common.config.AppBatchProperties;
+import io.igia.i2b2.cdi.common.config.DataSourceMetaInfoConfig;
 import io.igia.i2b2.cdi.common.domain.CsvProviderReference;
 import io.igia.i2b2.cdi.common.domain.DataFileName;
+import io.igia.i2b2.cdi.common.domain.DataJobStepName;
 import io.igia.i2b2.cdi.common.reader.CustomFlatFileReader;
 import io.igia.i2b2.cdi.common.reader.CustomJdbcItemReader;
 import io.igia.i2b2.cdi.common.util.CsvHeaders;
@@ -52,6 +53,9 @@ import io.igia.i2b2.cdi.common.util.CustomBeanValidator;
 import io.igia.i2b2.cdi.common.util.TableFields;
 import io.igia.i2b2.cdi.common.writer.CustomFlatFileWriter;
 import io.igia.i2b2.cdi.common.writer.CustomJdbcBatchItemWriter;
+import io.igia.i2b2.cdi.dataimport.joblistener.I2b2ProviderSkipListener;
+import io.igia.i2b2.cdi.dataimport.joblistener.ProviderSkipListener;
+import io.igia.i2b2.cdi.dataimport.processor.ProviderProcessor;
 
 
 @Configuration
@@ -86,6 +90,9 @@ public class ImportProvidersStep {
 	@Autowired
 	CustomBeanValidator customBeanValidator;
 	
+	@Autowired
+	DataSourceMetaInfoConfig dataSourceMetaInfoConfig;
+	
 	private static final String FILE_NAME = DataFileName.PROVIDER_DIMENSIONS.getFileName();
 	
 	// Load from csv into intermediate database...
@@ -110,15 +117,14 @@ public class ImportProvidersStep {
 	public FlatFileItemWriter<CsvProviderReference> providersSkippedRecordsWriter(@Value("#{jobParameters['ERROR_RECORDS_DIRECTORY_PATH']}") String filePath) {
 		String fileName = DataFileName.PROVIDER_DIMENSIONS_SKIPPED_RECORDS.getFileName();
 		return CustomFlatFileWriter.getWriter("providersSkippedRecordsWriter", filePath + fileName,
-				CsvHeaders.getProviderReferenceHeaders());
+				CsvHeaders.getProviderReferenceErrorRecordHeaders());
 	}
 	
 	@Bean
 	public Step intermediateDBImportProvidersStep() {
-		CustomSkipListener<CsvProviderReference, CsvProviderReference> skipListener = new CustomSkipListener<>();
-		skipListener.setFlatFileItemWriter(providersSkippedRecordsWriter(""));
+		ProviderSkipListener skipListener = new ProviderSkipListener(providersSkippedRecordsWriter(""));
 		
-		return stepBuilderFactory.get("intermediateDBImportProvidersStep")
+		return stepBuilderFactory.get(DataJobStepName.IMPORT_CSV_PROVIDER_STEP)
 				.<CsvProviderReference, CsvProviderReference>chunk(batchProperties.getCommitInterval())
 				.reader(csvProviderReferenceReader(""))
 				.processor(customBeanValidator.validator())
@@ -156,28 +162,33 @@ public class ImportProvidersStep {
 	
 	@Bean
 	public ProviderProcessor providerProcessor() {
-		ProviderProcessor processor = new ProviderProcessor();
-		processor.setProviderCache(providerCache);
-		return processor;
+		return new ProviderProcessor(providerCache, providersSkippedRecordsWriter(""));
 	}
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvProviderReference> i2b2ProviderDimensionWriter() {
 
-		String sql = "INSERT INTO i2b2demodata.provider_dimension(provider_id, provider_path, name_char, update_date, sourcesystem_cd)" + 
-		"select :providerID, :providerPath, :userNM, :updateDate, :sourceSystemCD where not exists " + 
-		"(select provider_id from i2b2demodata.provider_dimension where provider_id = :providerID)";
+		String sql = "INSERT INTO " + dataSourceMetaInfoConfig.getDemodataSchemaName() 
+		+ "provider_dimension(provider_id, provider_path, name_char, update_date, sourcesystem_cd)" + 
+		" values (:providerID, :providerPath, :userNM, :updateDate, :sourceSystemCD)";
 		
 		return CustomJdbcBatchItemWriter.getWriter(sql, i2b2DemoDataSource);
 	}
 
 	@Bean
 	public Step i2b2ImportProviderReferenceStep() throws Exception {
-		return i2b2StepBuilderFactory.get("i2b2ImportProviderReferenceStep")
+	    I2b2ProviderSkipListener skipListener = new I2b2ProviderSkipListener(providersSkippedRecordsWriter(""));
+	    
+		return i2b2StepBuilderFactory.get(DataJobStepName.IMPORT_I2B2_PROVIDER_STEP)
 				.<CsvProviderReference, CsvProviderReference>chunk(batchProperties.getCommitInterval())
 				.reader(intermediateDBProvidersReader())
 				.processor(providerProcessor())
 				.writer(i2b2ProviderDimensionWriter())
+				.faultTolerant()
+                .skipLimit(Integer.MAX_VALUE)
+                .skip(DuplicateKeyException.class)
+                .listener(skipListener)
+                .stream(providersSkippedRecordsWriter(""))
 				.build();
 	}
 }

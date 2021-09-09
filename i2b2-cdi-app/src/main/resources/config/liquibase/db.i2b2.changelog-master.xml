@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v.
+    2.0 with a Healthcare Disclaimer.
+    A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+    be found under the top level directory, named LICENSE.
+    If a copy of the MPL was not distributed with this file, You can obtain one at
+    http://mozilla.org/MPL/2.0/.
+    If a copy of the Healthcare Disclaimer was not distributed with this file, You
+    can obtain one at the project website https://github.com/igia.
+
+    Copyright (C) 2021-2022 Persistent Systems, Inc.
+
+-->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd
+        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+
+    <changeSet id="123a" author="igia">
+        <createTable tableName="derived_concept_definition">
+            <column name="id" type="Bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="concept_path" type="varchar(700)">
+                <constraints unique="true"
+                    uniqueConstraintName="uk_concept_path" nullable="false" />
+            </column>
+            <column name="description" type="text" />
+            <column name="sql_query" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="unit_cd" type="varchar(50)" />
+            <column name="update_date" type="datetime">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createTable tableName="derived_concept_job_details">
+            <column name="id" type="Bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="derived_concept_id" type="Bigserial" />
+            <column name="error_stack" type="text" />
+            <column name="derived_concept_sql" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false" />
+            </column>
+            <column name="started_on" type="datetime" />
+            <column name="completed_on" type="datetime" />
+        </createTable>
+        <addForeignKeyConstraint
+            baseColumnNames="derived_concept_id" baseTableName="derived_concept_job_details"
+            constraintName="fk_derived_concept_id" onDelete="CASCADE"
+            referencedColumnNames="id" referencedTableName="derived_concept_definition" />
+    </changeSet>
+    <changeSet id="123b" author="igia">
+        <createTable tableName="derived_concept_dependency">
+            <column name="id" type="Bigserial" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="derived_concept_id" type="Bigserial">
+                <constraints nullable="false" />
+            </column>
+            <column name="parent_concept_path" type="varchar(700)" />
+        </createTable>
+        <addForeignKeyConstraint
+            baseColumnNames="derived_concept_id" baseTableName="derived_concept_dependency"
+            constraintName="fk_derived_concept_id_dependency" onDelete="CASCADE"
+            referencedColumnNames="id" referencedTableName="derived_concept_definition" />
+        <addForeignKeyConstraint
+            baseColumnNames="parent_concept_path" baseTableName="derived_concept_dependency"
+            constraintName="fk_parent_concept_path" onDelete="CASCADE"
+            referencedColumnNames="concept_path" referencedTableName="concept_dimension" />
+    </changeSet>
+    <changeSet id="123c" author="igia">
+        <createTable tableName="global_temp_table">
+            <column name="patient_num" type="Bigserial" />
+            <column name="panel_count" type="Bigserial" />
+        </createTable>
+        <createTable tableName="dx">
+            <column name="patient_num" type="Bigserial" />
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

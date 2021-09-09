@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -24,20 +24,20 @@ public class CsvObservationFact extends Patient implements Serializable {
 
 	private static final long serialVersionUID = 3886600583050051942L;
 
-	@Size(max = 200)
+	@Size(max = 200, message = "Encounter Id size should not be greater than 200 characters")
 	private String encounterID;
 	
 	private int encounterNum;
 	
-	@NotEmpty
-	@Size(max = 50)
+	@NotEmpty(message = "Concept code (column 3) should not be empty")
+	@Size(max = 50, message = "Concept code (column 3) size should not be greater than 50 characters")
 	private String conceptCD;
 	
-	@Size(max = 50)
+	@Size(max = 50, message = "Provider Id (column 4) size should not be greater than 50 characters")
 	private String providerID;
 	
-	@NotEmpty
-	@Size(max = 50)
+	@NotEmpty(message = "Start DTS (column 5) should not be empty")
+	@Size(max = 50, message = "Start DTS (column 5) size should not be greater than 50 characters")
 	private String startDTS;
 	
 	private Date startDate;
@@ -46,13 +46,15 @@ public class CsvObservationFact extends Patient implements Serializable {
 	private Integer instanceNumeric;
 	private String valTypeCd;
 	
-	@Size(max = 255)
+	@Size(max = 255, message = "Value (column 8) size should not be greater than 255 characters")
 	private String value;
 	
 	private Double valueNumeric;
 	
-	@Size(max = 50)
+	@Size(max = 50, message = "Unit Cd (column 9) size should not be greater than 50 characters")
 	private String unitCD;
+	
+	private String validationErrorMessage;
 	
 	public String getEncounterID() {
 		return encounterID;
@@ -162,5 +164,33 @@ public class CsvObservationFact extends Patient implements Serializable {
 	public static long getSerialversionuid() {
 		return serialVersionUID;
 	}
+
+    public String getValidationErrorMessage() {
+        return validationErrorMessage;
+    }
+
+    public void setValidationErrorMessage(String validationErrorMessage) {
+        this.validationErrorMessage = validationErrorMessage;
+    }
 	
+    /**
+     * Wrap observation fact fields with double quotes. This method requires when there
+     * is need to write into the csv file.
+     * @param c - observation fact
+     * @return
+     */
+    public CsvObservationFact wrapConceptFieldsWithDoubleQuotes(CsvObservationFact c) {
+        CsvObservationFact fact = new CsvObservationFact();
+        fact.setEncounterID("\"" + c.getEncounterID() + "\"");
+        fact.setPatientID("\"" + c.getPatientID() + "\"");
+        fact.setConceptCD("\"" + c.getConceptCD() + "\"");
+        fact.setProviderID("\"" + c.getProviderID() + "\"");
+        fact.setStartDTS("\"" + c.getStartDTS() + "\"");
+        fact.setModifierCD("\"" + c.getModifierCD() + "\"");
+        fact.setInstanceNum("\"" + c.getInstanceNum() + "\"");
+        fact.setValue("\"" + c.getValue() + "\"");
+        fact.setUnitCD("\"" + c.getUnitCD() + "\"");
+        fact.setValidationErrorMessage("\"" + c.getValidationErrorMessage() + "\"");
+        return fact;
+    }
 }

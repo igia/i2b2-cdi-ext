@@ -10,7 +10,7 @@
     If a copy of the Healthcare Disclaimer was not distributed with this file, You
     can obtain one at the project website https://github.com/igia.
 
-    Copyright (C) 2018-2019 Persistent Systems, Inc.
+    Copyright (C) 2021-2022 Persistent Systems, Inc.
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -18,7 +18,7 @@
 
     <groupId>io.igia.i2b2.cdi</groupId>
     <artifactId>clinical-data-infrastructure</artifactId>
-    <version>0.3.3</version>
+    <version>0.3.1</version>
     <packaging>pom</packaging>
 
     <name>clinical-data-infrastructure</name>
@@ -59,6 +59,10 @@
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-sftp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-jdbc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.batch</groupId>
@@ -123,6 +127,10 @@
 			<groupId>org.codehaus.jettison</groupId>
 			<artifactId>jettison</artifactId>
 			<version>1.4.0</version>
+		</dependency>
+		<dependency>
+		    <groupId>com.microsoft.sqlserver</groupId>
+		    <artifactId>mssql-jdbc</artifactId>
 		</dependency>
   	</dependencies>
     <url>https://github.com/igia/i2b2-cdi-ext/</url>
@@ -213,6 +221,9 @@
 			            <exclude>.prettierignore</exclude>
 			            <exclude>.factorypath</exclude>
 			            <exclude>mvnw.cmd</exclude>
+			            <exclude>**/wait-for-it.sh</exclude>
+			            <exclude>**/Graph.java</exclude>
+			            <exclude>**/TopologicalSortGraph.java</exclude>
 			            <!-- bypass temporary files created during Jenkins build -->
                         	    <exclude>env.txt</exclude>
 			        </excludes>
@@ -238,6 +249,7 @@
   <modules>
     <module>common</module>
     <module>concept-import</module>
+    <module>derived-fact</module>
     <module>data-import</module>
     <module>i2b2-cdi-app</module>
  </modules>

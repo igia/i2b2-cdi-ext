@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.config;
 
@@ -22,6 +22,7 @@ public class AppBatchProperties {
     private Integer commitInterval;
     private Integer jdbcCursorReaderFetchSize;
     private Integer validationFailSkipLimit;
+    private boolean enableNotExistsClause;
 
 	public Integer getCommitInterval() {
 		return commitInterval;
@@ -40,5 +41,11 @@ public class AppBatchProperties {
 	}
 	public void setValidationFailSkipLimit(Integer validationFailSkipLimit) {
 		this.validationFailSkipLimit = validationFailSkipLimit;
+	}
+	public Boolean isEnableNotExistsClause() {
+		return enableNotExistsClause;
+	}
+	public void setEnableNotExistsClause(Boolean enableNotExistsClause) {
+		this.enableNotExistsClause = enableNotExistsClause;
 	}
 }

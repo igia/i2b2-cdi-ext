@@ -8,11 +8,9 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.config;
-
-import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,23 +22,20 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import io.igia.i2b2.cdi.dataimport.jobListener.DataJobCompletionNotificationListener;
-import io.igia.i2b2.cdi.dataimport.step.ImportDemographicsStep;
-import io.igia.i2b2.cdi.dataimport.step.ImportEncountersStep;
-import io.igia.i2b2.cdi.dataimport.step.ImportObservationFactsStep;
-import io.igia.i2b2.cdi.dataimport.step.ImportProvidersStep;
-import io.igia.i2b2.cdi.common.config.AppBatchProperties;
-import io.igia.i2b2.cdi.common.config.AppIntegrationProperties;
 import io.igia.i2b2.cdi.common.config.LaunchConfiguration;
 import io.igia.i2b2.cdi.common.tasklet.ClearCacheTasklet;
 import io.igia.i2b2.cdi.common.tasklet.DeleteDataTasklet;
 import io.igia.i2b2.cdi.common.tasklet.DeleteFileTasklet;
+import io.igia.i2b2.cdi.dataimport.joblistener.DataJobCompletionNotificationListener;
+import io.igia.i2b2.cdi.dataimport.step.ImportDemographicsStep;
+import io.igia.i2b2.cdi.dataimport.step.ImportEncountersStep;
+import io.igia.i2b2.cdi.dataimport.step.ImportObservationFactsStep;
+import io.igia.i2b2.cdi.dataimport.step.ImportProvidersStep;
 
 @Configuration
 @EnableBatchProcessing
@@ -55,22 +50,8 @@ public class DataBatchConfiguration {
 	public StepBuilderFactory stepBuilderFactory;
 
 	@Autowired
-	AppBatchProperties batchProperties;
-
-	@Autowired
-	AppIntegrationProperties integrationProperties;
-
-	@Autowired
 	DataJobCompletionNotificationListener listener;
-
-	@Autowired
-	@Qualifier("postgresqlDataSource")
-	DataSource postgresqlDataSource;
-	
-	@Autowired
-	@Qualifier("i2b2DemoDataSource")
-	DataSource i2b2DemoDataSource;
-	
+		
 	@Autowired
 	DeleteDataTasklet deleteDataTasklet;
 	
@@ -89,18 +70,24 @@ public class DataBatchConfiguration {
 	@Autowired
 	ClearCacheTasklet clearCacheTasklet;
 	
+	private static final String DATA_JOB_NAME = "importDataJob";
+    private static final String PRE_DELETE_DATA_TASKLET = "preDeleteDataTaskletStep";
+    private static final String POST_DELETE_DATA_TASKLET = "postDeleteDataTaskletStep";
+    private static final String DELETE_DATA_FILE_TASKLET = "deleteDataFileTaskletStep";
+    private static final String CLEAR_CACHE_TASKLET = "clearCacheTaskletStep";
+	
 	private static final Logger log = LoggerFactory.getLogger(DataBatchConfiguration.class);
 	
 	@Bean
 	public Step preDeleteDataTaskletStep() {
-		return stepBuilderFactory.get("preDeleteDataTaskletStep")
+		return stepBuilderFactory.get(PRE_DELETE_DATA_TASKLET)
 				.tasklet(deleteDataTasklet)
 				.build();
 	}
 	
 	@Bean
 	public Step postDeleteDataTaskletStep() {
-		return stepBuilderFactory.get("postDeleteDataTaskletStep")
+		return stepBuilderFactory.get(POST_DELETE_DATA_TASKLET)
 				.tasklet(deleteDataTasklet)
 				.build();
 	}
@@ -112,14 +99,14 @@ public class DataBatchConfiguration {
 
 	@Bean
 	public Step deleteDataFileTaskletStep() {
-		return stepBuilderFactory.get("deleteDataFileTaskletStep")
+		return stepBuilderFactory.get(DELETE_DATA_FILE_TASKLET)
 				.tasklet(deleteDataFileTasklet())
 				.build();
 	}
 	
 	@Bean
 	public Step clearCacheTaskletStep() {
-		return stepBuilderFactory.get("clearCacheTaskletStep")
+		return stepBuilderFactory.get(CLEAR_CACHE_TASKLET)
 				.tasklet(clearCacheTasklet)
 				.build();
 	}
@@ -129,7 +116,7 @@ public class DataBatchConfiguration {
 
 		try {
 			return jobBuilderFactory
-					.get("importDataJob").incrementer(new RunIdIncrementer()).listener(listener)
+					.get(DATA_JOB_NAME).incrementer(new RunIdIncrementer()).listener(listener)
 					.flow(preDeleteDataTaskletStep())
 					.next(importDemographicsStep.intermediateDBImportDemographicsStep())
 					.next(importDemographicsStep.i2b2ImportDemographicsStep())

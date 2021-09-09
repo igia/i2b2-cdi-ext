@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!--
+
+    This Source Code Form is subject to the terms of the Mozilla Public License, v.
+    2.0 with a Healthcare Disclaimer.
+    A copy of the Mozilla Public License, v. 2.0 with the Healthcare Disclaimer can
+    be found under the top level directory, named LICENSE.
+    If a copy of the MPL was not distributed with this file, You can obtain one at
+    http://mozilla.org/MPL/2.0/.
+    If a copy of the Healthcare Disclaimer was not distributed with this file, You
+    can obtain one at the project website https://github.com/igia.
+
+    Copyright (C) 2021-2022 Persistent Systems, Inc.
+
+-->
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>io.igia.i2b2.cdi</groupId>
+    <artifactId>clinical-data-infrastructure</artifactId>
+    <version>0.3.1</version>
+  </parent>
+  
+  <groupId>io.igia.i2b2.cdi.derivedfact</groupId>
+  <artifactId>derived-fact</artifactId>
+  <version>0.3.1</version>
+  <packaging>jar</packaging>
+  
+  <name>derived-fact</name>
+  
+  <properties>
+  
+  </properties>
+  <dependencies>
+  	<dependency>
+		<groupId>io.igia.i2b2.cdi.common</groupId>
+  		<artifactId>common</artifactId>
+  		<version>0.3.1</version>
+	</dependency>
+  </dependencies>
+</project>

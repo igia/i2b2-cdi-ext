@@ -9,7 +9,7 @@
     If a copy of the Healthcare Disclaimer was not distributed with this file, You
     can obtain one at the project website https://github.com/igia.
 
-    Copyright (C) 2018-2019 Persistent Systems, Inc.
+    Copyright (C) 2021-2022 Persistent Systems, Inc.
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -19,12 +19,12 @@
   <parent>
     <groupId>io.igia.i2b2.cdi</groupId>
     <artifactId>clinical-data-infrastructure</artifactId>
-    <version>0.3.3</version>
+    <version>0.3.1</version>
   </parent>
 
   <groupId>io.igia.i2b2.cdi.dataimport</groupId>
   <artifactId>data-import</artifactId>
-  <version>0.3.3</version>
+  <version>0.3.1</version>
   <packaging>jar</packaging>
 
   <name>data-import</name>
@@ -86,7 +86,12 @@
   	<dependency>
 		<groupId>io.igia.i2b2.cdi.common</groupId>
   		<artifactId>common</artifactId>
-  		<version>0.3.3</version>
+  		<version>0.3.1</version>
+	</dependency>
+	<dependency>
+		<groupId>io.igia.i2b2.cdi.derivedfact</groupId>
+  		<artifactId>derived-fact</artifactId>
+  		<version>0.3.1</version>
 	</dependency>
   </dependencies>
   <build>
