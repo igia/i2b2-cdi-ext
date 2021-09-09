@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -17,8 +17,8 @@ import javax.validation.constraints.Size;
 
 public class Patient extends BaseModel {
 	
-	@NotEmpty
-	@Size(max = 200)
+	@NotEmpty(message = "Patient Id should not be empty")
+	@Size(max = 200, message = "Patient Id size should not be greater than 200 characters")
 	private String patientID;
 	
 	private int patientNum;

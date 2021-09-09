@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.processor;
 
@@ -26,6 +26,7 @@ import io.igia.i2b2.cdi.common.cache.PatientMappingCache;
 import io.igia.i2b2.cdi.common.cache.PatientNextValCache;
 import io.igia.i2b2.cdi.common.domain.AppJobContextProperties;
 import io.igia.i2b2.cdi.common.domain.CsvDemographics;
+import io.igia.i2b2.cdi.common.exception.PatientAlreadyExistsException;
 import io.igia.i2b2.cdi.common.helper.PatientHelper;
 import io.igia.i2b2.cdi.common.util.AppJobContext;
 
@@ -36,6 +37,12 @@ public class DemographicsProcessor implements ItemProcessor<CsvDemographics,CsvD
 	private DataSource i2b2DemoDataSource;
 	private JdbcTemplate template = null;
 	private AppJobContextProperties appJobContextProperties;
+	private PatientHelper patientHelper;
+	private static final String PATIENT_ALREADY_EXISTS = "Duplicate record";
+	
+	public DemographicsProcessor (PatientHelper patientHelper) {
+		this.patientHelper = patientHelper;;
+	}
 	
 	public void setPatientNextValueCache(PatientNextValCache patientNextValCache) {
 		this.patientNextValCache = patientNextValCache;
@@ -54,7 +61,7 @@ public class DemographicsProcessor implements ItemProcessor<CsvDemographics,CsvD
 		template = new JdbcTemplate(i2b2DemoDataSource);
 		
 		//get next patient id value
-		Integer patientIdNextVal = PatientHelper.getPatientIdNextValue(template);
+		Integer patientIdNextVal = patientHelper.getPatientIdNextValue(template);
 		patientNextValCache.setNextValue(patientIdNextVal);
 		
 		// Get metadata properties that has calculated in precalculation step
@@ -65,10 +72,10 @@ public class DemographicsProcessor implements ItemProcessor<CsvDemographics,CsvD
 	public CsvDemographics process(CsvDemographics item) throws Exception {
 		
 		//Get data from i2b2. Check if patient id exists.
-		List<Integer> patientNums = PatientHelper.getPatientNums(template, item.getPatientID());
+		List<Integer> patientNums = patientHelper.getPatientNums(template, item.getPatientID());
 		if (!patientNums.isEmpty()) {
 			patientMappingCache.putData(item.getPatientID(), patientNums.get(0));
-			return null;
+			throw new PatientAlreadyExistsException(PATIENT_ALREADY_EXISTS);
 		}
 			
 		item.setSourceSystemCD(appJobContextProperties.getSourceSystemCd());

@@ -8,16 +8,21 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.util;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +49,14 @@ public class FileHelper {
 
 		try {
 			ZipUtil.unpack(new File(zipDirectoryPath), new File(getDestinationPath(payload)));
-			
-			// Delete zip file after unpack
-			File deleteFile = new File(zipDirectoryPath);
-			if (!deleteFile.delete()) {
-				log.error("Error while deleting zip file");
-			}
 		} catch (Exception e) {
 			log.error("Error while unpacking zip file {}", e);
+		}
+		
+		// Delete zip file after unpack
+		File deleteFile = new File(zipDirectoryPath);
+		if (!deleteFile.delete()) {
+			log.error("Error while deleting zip file");
 		}
 		return zipDirectoryPath;
 	}
@@ -141,4 +146,21 @@ public class FileHelper {
 		File file = new File(errorRecordsDirectoryPath);
 		file.mkdirs();
 	}
+	
+	/**
+	 * Get count of number of rows in a csv file.
+	 * @param file - Full path of the file
+	 * @return
+	 */
+    public static int getRowCountOfCsv(String file) {
+        int count = 0;
+        try (Reader reader = Files.newBufferedReader(Paths.get(file));
+                CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT);) {
+            // '-1' belongs to the csv header
+            count = csvParser.getRecords().size() - 1;
+        } catch (IOException e) {
+            log.error("Error while counting number of rows in csv file : {}", e);
+        }
+        return count;
+    }
 }

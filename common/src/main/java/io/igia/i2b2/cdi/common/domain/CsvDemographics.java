@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -26,8 +26,10 @@ public class CsvDemographics extends Patient implements Serializable {
 	private String birthDTS;
 	private Date birthDate;
 	
-	@Size(max = 50)
+	@Size(max = 50, message = "Gender (column 3) size should not be greater than 50 characters")
 	private String gender;
+	
+	private String validationErrorMessage;
 	
 	public static long getSerialversionuid() {
 		return serialVersionUID;
@@ -57,4 +59,33 @@ public class CsvDemographics extends Patient implements Serializable {
 	public void setGender(String gender) {
 		this.gender = gender;
 	}
+
+    public String getValidationErrorMessage() {
+        return validationErrorMessage;
+    }
+
+    public void setValidationErrorMessage(String validationErrorMessage) {
+        this.validationErrorMessage = validationErrorMessage;
+    }
+
+    @Override
+    public String toString() {
+        return "CsvDemographics [birthDTS=" + birthDTS + ", birthDate=" + birthDate + ", gender=" + gender
+                + ", validationErrorMessage=" + validationErrorMessage + "]";
+    }
+	
+    /**
+     * Wrap demographic fields with double quotes. This method requires when there
+     * is need to write into the csv file.
+     * @param c - Demographic
+     * @return
+     */
+    public CsvDemographics wrapConceptFieldsWithDoubleQuotes(CsvDemographics c) {
+        CsvDemographics demographic = new CsvDemographics();
+        demographic.setPatientID("\"" + c.getPatientID() + "\"");
+        demographic.setBirthDTS("\"" + c.getBirthDTS() + "\"");
+        demographic.setGender("\"" + c.getGender() + "\"");
+        demographic.setValidationErrorMessage("\"" + c.getValidationErrorMessage() + "\"");
+        return demographic;
+    }
 }

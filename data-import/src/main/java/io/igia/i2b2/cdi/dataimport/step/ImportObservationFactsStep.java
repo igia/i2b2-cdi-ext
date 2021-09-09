@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.step;
 
@@ -42,14 +42,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.RowMapper;
 
-import io.igia.i2b2.cdi.dataimport.processor.ObservationFactProcessor;
-import io.igia.i2b2.cdi.common.JobListener.CustomSkipListener;
 import io.igia.i2b2.cdi.common.cache.EncounterNextValCache;
 import io.igia.i2b2.cdi.common.cache.PatientMappingCache;
 import io.igia.i2b2.cdi.common.cache.PatientNextValCache;
 import io.igia.i2b2.cdi.common.config.AppBatchProperties;
+import io.igia.i2b2.cdi.common.config.DataSourceMetaInfoConfig;
 import io.igia.i2b2.cdi.common.domain.CsvObservationFact;
 import io.igia.i2b2.cdi.common.domain.DataFileName;
+import io.igia.i2b2.cdi.common.domain.DataJobStepName;
 import io.igia.i2b2.cdi.common.helper.EncounterHelper;
 import io.igia.i2b2.cdi.common.helper.PatientHelper;
 import io.igia.i2b2.cdi.common.reader.CustomFlatFileReader;
@@ -59,6 +59,9 @@ import io.igia.i2b2.cdi.common.util.CustomBeanValidator;
 import io.igia.i2b2.cdi.common.util.TableFields;
 import io.igia.i2b2.cdi.common.writer.CustomFlatFileWriter;
 import io.igia.i2b2.cdi.common.writer.CustomJdbcBatchItemWriter;
+import io.igia.i2b2.cdi.dataimport.joblistener.I2b2ObservationFactSkipListener;
+import io.igia.i2b2.cdi.dataimport.joblistener.ObservationFactSkipListener;
+import io.igia.i2b2.cdi.dataimport.processor.ObservationFactProcessor;
 
 @Configuration
 public class ImportObservationFactsStep {
@@ -94,6 +97,15 @@ public class ImportObservationFactsStep {
 	@Autowired
 	EncounterNextValCache encounterNextValCache;
 	
+	@Autowired
+	PatientHelper patientHelper;
+	
+	@Autowired
+	EncounterHelper encounterHelper;
+	
+	@Autowired
+	DataSourceMetaInfoConfig dataSourceMetaInfoConfig;
+	
 	// Load from csv into intermediate database...
 	@Bean
 	@StepScope
@@ -115,14 +127,13 @@ public class ImportObservationFactsStep {
 	public FlatFileItemWriter<CsvObservationFact> observationsSkippedRecordsWriter(@Value("#{jobParameters['ERROR_RECORDS_DIRECTORY_PATH']}") String filePath) {
 		String fileName = DataFileName.OBSERVATION_FACTS_SKIPPED_RECORDS.getFileName();
 		return CustomFlatFileWriter.getWriter("observationsSkippedRecordsWriter", filePath + fileName,
-				CsvHeaders.getObservationFactHeaders());
+				CsvHeaders.getObservationFactErrorRecordHeaders());
 	}
 	
 	public Step intermediateDBImportObservationFactsStep() {
-		CustomSkipListener<CsvObservationFact, CsvObservationFact> skipListener = new CustomSkipListener<>();
-		skipListener.setFlatFileItemWriter(observationsSkippedRecordsWriter(""));
+		ObservationFactSkipListener skipListener = new ObservationFactSkipListener(observationsSkippedRecordsWriter(""));
 		
-		return stepBuilderFactory.get("intermediateDBImportObservationFactsStep")
+		return stepBuilderFactory.get(DataJobStepName.IMPORT_CSV_OBSERVATION_FACT_STEP)
 				.<CsvObservationFact, CsvObservationFact>chunk(batchProperties.getCommitInterval())
 				.reader(csvObservationFactsReader(""))
 				.processor(customBeanValidator.validator())
@@ -166,7 +177,7 @@ public class ImportObservationFactsStep {
 	
 	@Bean
 	public  ObservationFactProcessor i2b2ObservationFactProcessor() {
-		ObservationFactProcessor observationFactProcessor = new ObservationFactProcessor();
+		ObservationFactProcessor observationFactProcessor = new ObservationFactProcessor(patientHelper, encounterHelper);
 		observationFactProcessor.setDataSource(i2b2DemoDataSource);
 		observationFactProcessor.setPatientCache(patientMappingCache);
 		observationFactProcessor.setPatientNextValueCache(patientNextValCache);
@@ -176,22 +187,22 @@ public class ImportObservationFactsStep {
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvObservationFact> i2b2PatientMappingWriter() {
-		return PatientHelper.getI2b2PatientMappingWriter(i2b2DemoDataSource);
+		return patientHelper.getI2b2PatientMappingWriterWithExistsClause(i2b2DemoDataSource);
 	}
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvObservationFact> i2b2PatientDimensionWriter() {		
-		return PatientHelper.getI2b2PatientDimensionBasicWriter(i2b2DemoDataSource);
+		return patientHelper.getI2b2PatientDimensionBasicWriter(i2b2DemoDataSource);
 	}
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvObservationFact> i2b2FactEncounterMappingWriter() {
-		return EncounterHelper.getI2b2EncounterMappingWriter(i2b2DemoDataSource);
+		return encounterHelper.getI2b2EncounterMappingWriter(i2b2DemoDataSource);
 	}
 	
 	@Bean
 	public JdbcBatchItemWriter<CsvObservationFact> i2b2FactVisitDimensionWriter() {
-		return EncounterHelper.getI2b2VisitDimensionBasicWriter(i2b2DemoDataSource);
+		return encounterHelper.getI2b2VisitDimensionBasicWriter(i2b2DemoDataSource);
 	}
 	
 	@Bean
@@ -210,20 +221,29 @@ public class ImportObservationFactsStep {
 	@Bean
 	public JdbcBatchItemWriter<CsvObservationFact> i2b2ObservationFactsWriter() {
 
-		String sql = "INSERT INTO i2b2demodata.observation_fact "
+		String sql = "INSERT INTO " + dataSourceMetaInfoConfig.getDemodataSchemaName() + "observation_fact "
 				+ "(encounter_num, patient_num, concept_cd, provider_id, start_date, modifier_cd, instance_num, "
-				+ "valtype_cd, tval_char, nval_num, units_cd, update_date, sourcesystem_cd)"
-				+ " select :encounterNum, :patientNum, :conceptCD, :providerID, :startDate, :modifierCD, " 
-				+ ":instanceNumeric, :valTypeCd, :value, :valueNumeric, :unitCD, :updateDate, :sourceSystemCD " 
-				+ " where not exists (select encounter_num from i2b2demodata.observation_fact where encounter_num = :encounterNum and patient_num = :patientNum and" 
-				+ " concept_cd = :conceptCD and provider_id = :providerID and start_date = :startDate)";
+				+ "valtype_cd, tval_char, nval_num, units_cd, update_date, sourcesystem_cd)";
 		
+		if (batchProperties.isEnableNotExistsClause()) {
+			sql += " select :encounterNum, :patientNum, :conceptCD, :providerID, :startDate, :modifierCD, "
+					+ ":instanceNumeric, :valTypeCd, :value, :valueNumeric, :unitCD, :updateDate, :sourceSystemCD "
+					+ " where not exists (select encounter_num from " + dataSourceMetaInfoConfig.getDemodataSchemaName()
+					+ "observation_fact where encounter_num = :encounterNum and patient_num = :patientNum and"
+					+ " concept_cd = :conceptCD and provider_id = :providerID and start_date = :startDate)";
+		} else {
+			sql += " VALUES (:encounterNum, :patientNum, :conceptCD, :providerID, :startDate, :modifierCD, "
+					+ ":instanceNumeric, :valTypeCd, :value, :valueNumeric, :unitCD, :updateDate, :sourceSystemCD)";
+		}
 		return CustomJdbcBatchItemWriter.getWriter(sql, i2b2DemoDataSource);
 	}
 
 	@Bean
 	public Step i2b2ImportObservationFactsStep() throws Exception {
-		return i2b2StepBuilderFactory.get("i2b2ImportObservationFactsStep")
+        I2b2ObservationFactSkipListener skipListener = new I2b2ObservationFactSkipListener(
+                observationsSkippedRecordsWriter(""));
+
+	    return i2b2StepBuilderFactory.get(DataJobStepName.IMPORT_I2B2_OBSERVATION_FACT_STEP)
 				.<CsvObservationFact, CsvObservationFact>chunk(batchProperties.getCommitInterval())
 				.reader(intermediateDBObservationFactsReader())
 				.processor(i2b2ObservationFactProcessor())
@@ -231,6 +251,8 @@ public class ImportObservationFactsStep {
 				.faultTolerant()
 				.skip(DuplicateKeyException.class)
 				.skipLimit(Integer.MAX_VALUE)
+				.listener(skipListener)
+				.stream(observationsSkippedRecordsWriter(""))
 				.build();
 	}
 }

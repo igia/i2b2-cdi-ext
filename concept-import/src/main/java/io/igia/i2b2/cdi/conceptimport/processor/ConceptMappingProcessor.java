@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.conceptimport.processor;
 
@@ -25,21 +25,28 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.StringUtils;
 
+import io.igia.i2b2.cdi.common.config.DataSourceMetaInfoConfig;
 import io.igia.i2b2.cdi.common.config.I2b2SchemaProperties;
 import io.igia.i2b2.cdi.common.domain.AppJobContextProperties;
 import io.igia.i2b2.cdi.common.domain.CsvConceptMapping;
+import io.igia.i2b2.cdi.common.exception.ConceptNotFoundException;
 import io.igia.i2b2.cdi.common.util.AppJobContext;
 
 public class ConceptMappingProcessor implements ItemProcessor<CsvConceptMapping, CsvConceptMapping> {
 
 	private AppJobContextProperties appJobContextProperties;
-	private DataSource dataSource;
+	private DataSource i2b2DemoDataSource;
+	private DataSource i2b2MetaDataSource;
 	private I2b2SchemaProperties i2b2Properties;
-
-	public ConceptMappingProcessor(DataSource i2b2DemoDataSource, I2b2SchemaProperties properties) {
-		dataSource = i2b2DemoDataSource;
-		i2b2Properties = properties;
-	}
+	private DataSourceMetaInfoConfig dataSourceMetaInfoConfig;
+	
+    public ConceptMappingProcessor(DataSource i2b2DemoDataSource, DataSource i2b2MetaDataSource,
+            I2b2SchemaProperties properties, DataSourceMetaInfoConfig dataSourceMetaInfoConfig) {
+        this.i2b2DemoDataSource = i2b2DemoDataSource;
+        this.i2b2MetaDataSource = i2b2MetaDataSource;
+        this.i2b2Properties = properties;
+        this.dataSourceMetaInfoConfig = dataSourceMetaInfoConfig;
+    }
 
 	@BeforeStep
 	public void beforeStep(StepExecution stepExecution) {
@@ -47,22 +54,37 @@ public class ConceptMappingProcessor implements ItemProcessor<CsvConceptMapping,
 		appJobContextProperties = new AppJobContext()
 				.getJobContextPropertiesFromJobParameters(stepExecution.getJobExecution());
 	}
-
+	
 	@Override
 	public CsvConceptMapping process(CsvConceptMapping item) throws Exception {
 
-		NamedParameterJdbcTemplate template = new NamedParameterJdbcTemplate(dataSource);
+		NamedParameterJdbcTemplate demodataTemplate = new NamedParameterJdbcTemplate(i2b2DemoDataSource);
+		NamedParameterJdbcTemplate metadataTemplate = new NamedParameterJdbcTemplate(i2b2MetaDataSource);
+		List<String> oldConceptPaths;
 		List<Map<String, Object>> oldI2b2ConceptList;
 		Map<String, Object> oldI2b2Concept;
-
-		String i2b2Query = "select * from i2b2metadata.i2b2 where c_fullname in ( select concept_path "
-				+ "from i2b2demodata.concept_dimension where concept_cd = :conceptCd limit 1 )";
+		
+		String i2b2DemoQuery = "select concept_path from " + dataSourceMetaInfoConfig.getDemodataSchemaName() + 
+				"concept_dimension where concept_cd = :conceptCd";
+		
 		MapSqlParameterSource i2b2Params = new MapSqlParameterSource();
 		i2b2Params.addValue("conceptCd", item.getStdCode());
 
-		oldI2b2ConceptList = template.queryForList(i2b2Query, i2b2Params);
+		oldConceptPaths = demodataTemplate.queryForList(i2b2DemoQuery, i2b2Params, String.class);
+		
+		if (oldConceptPaths.isEmpty()) {
+		    throw new ConceptNotFoundException("Concept not found for std code");
+		}
+		
+		String i2b2MetaQuery = "select * from " + dataSourceMetaInfoConfig.getMetadataSchemaName() + 
+				"i2b2 where c_fullname = :cFullName" ;
+		
+		i2b2Params.addValue("cFullName", oldConceptPaths.get(0));
+		
+		oldI2b2ConceptList = metadataTemplate.queryForList(i2b2MetaQuery, i2b2Params);
+		
 		if (oldI2b2ConceptList.isEmpty()) {
-			return null;
+		    throw new ConceptNotFoundException("Concept metadata not found for std code");
 		}
 		oldI2b2Concept = oldI2b2ConceptList.get(0);
 		String path = oldI2b2Concept.get("c_fullname").toString();

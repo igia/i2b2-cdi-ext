@@ -10,7 +10,7 @@
     If a copy of the Healthcare Disclaimer was not distributed with this file, You
     can obtain one at the project website https://github.com/igia.
 
-    Copyright (C) 2018-2019 Persistent Systems, Inc.
+    Copyright (C) 2021-2022 Persistent Systems, Inc.
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -18,12 +18,12 @@
   <parent>
   	<groupId>io.igia.i2b2.cdi</groupId>
     <artifactId>clinical-data-infrastructure</artifactId>
-    <version>0.3.3</version>
+    <version>0.3.1</version>
   </parent>
 
   <groupId>io.igia.i2b2.cdi.app</groupId>
   <artifactId>i2b2-cdi-app</artifactId>
-  <version>0.3.3</version>
+  <version>0.3.1</version>
   <packaging>war</packaging>
 
   <name>i2b2-cdi-app</name>
@@ -56,13 +56,18 @@
 	    <dependency>
 	    	<groupId>io.igia.i2b2.cdi.conceptimport</groupId>
 		    <artifactId>concept-import</artifactId>
-			<version>0.3.3</version>
+			<version>0.3.1</version>
+	  	</dependency>
+	  	<dependency>
+	  		<groupId>io.igia.i2b2.cdi.derivedfact</groupId>
+  			<artifactId>derived-fact</artifactId>
+  			<version>0.3.1</version>
 	  	</dependency>
 	  	<dependency>
 	  		<groupId>io.igia.i2b2.cdi.dataimport</groupId>
   			<artifactId>data-import</artifactId>
-  			<version>0.3.3</version>
-	  	</dependency>
+  			<version>0.3.1</version>
+		</dependency>
     </dependencies>
 	<url>https://github.com/igia/i2b2-cdi-ext/</url>
     <licenses>
@@ -212,7 +217,7 @@
                         <image>openjdk:8-jre-alpine</image>
                     </from>
                     <to>
-                        <image>igia/i2b2-cdi-app:latest</image>
+                        <image>i2b2/i2b2-cdi-app:latest</image>
                     </to>
                     <container>
                         <environment>

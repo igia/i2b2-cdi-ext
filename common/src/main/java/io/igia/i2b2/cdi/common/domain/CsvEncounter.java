@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -24,8 +24,8 @@ public class CsvEncounter extends Patient implements Serializable {
 
 	private static final long serialVersionUID = -4997639823226935309L;
 
-	@NotEmpty
-	@Size(max = 200)
+	@NotEmpty(message = "Encounter Id (column 1) should not be empty")
+	@Size(max = 200, message = "Encounter Id (column 1) size should not be greater than 50 characters")
 	private String encounterID;
 
 	private String startDTS;
@@ -33,6 +33,7 @@ public class CsvEncounter extends Patient implements Serializable {
 	private String endDTS;
 	private Date endDate;
 	private int encounterNum;
+	private String validationErrorMessage;
 
 	public CsvEncounter() {
 
@@ -50,6 +51,7 @@ public class CsvEncounter extends Patient implements Serializable {
 		this.endDTS = of.endDTS;
 		this.endDate = of.endDate;
 		this.encounterNum = of.encounterNum;
+		this.validationErrorMessage = of.validationErrorMessage;
 	}
 
 	public static long getSerialversionuid() {
@@ -105,4 +107,28 @@ public class CsvEncounter extends Patient implements Serializable {
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
 	}
+
+    public String getValidationErrorMessage() {
+        return validationErrorMessage;
+    }
+
+    public void setValidationErrorMessage(String validationErrorMessage) {
+        this.validationErrorMessage = validationErrorMessage;
+    }
+	
+    /**
+     * Wrap encounter fields with double quotes. This method requires when there
+     * is need to write into the csv file.
+     * @param c - Encounter
+     * @return
+     */
+    public CsvEncounter wrapConceptFieldsWithDoubleQuotes(CsvEncounter c) {
+        CsvEncounter encounter = new CsvEncounter();
+        encounter.setEncounterID("\"" + c.getEncounterID() + "\"");
+        encounter.setPatientID("\"" + c.getPatientID() + "\"");
+        encounter.setStartDTS("\"" + c.getStartDTS() + "\"");
+        encounter.setEndDTS("\"" + c.getEndDTS() + "\"");
+        encounter.setValidationErrorMessage("\"" + c.getValidationErrorMessage() + "\"");
+        return encounter;
+    }
 }

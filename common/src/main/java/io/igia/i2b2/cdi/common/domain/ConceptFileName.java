@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -20,7 +20,9 @@ public enum ConceptFileName {
 	CONCEPTS("concepts.csv"),
 	CONCEPTS_SKIPPED_RECORDS("concepts_skippedrecords.csv"),
 	CONCEPT_MAPPINGS("concept_mappings.csv"),
-	CONCEPT_MAPPINGS_SKIPPED_RECORDS("conceptmapping_skippedrecords.csv");
+	CONCEPT_MAPPINGS_SKIPPED_RECORDS("conceptmapping_skippedrecords.csv"),
+	DERIVED_CONCEPTS("derived_fact.csv"),
+	DERIVED_CONCEPTS_SKIPPED_RECORDS("derived_fact_skippedrecords.csv");
 
 	private String fileName;
 	private static Map<String, Boolean> map;
@@ -38,6 +40,7 @@ public enum ConceptFileName {
 			map = new HashMap<>();
 			map.put(CONCEPTS.getFileName(), false);
 			map.put(CONCEPT_MAPPINGS.getFileName(), false);
+			map.put(DERIVED_CONCEPTS.getFileName(), false);
 		}
 		return map;
 	}

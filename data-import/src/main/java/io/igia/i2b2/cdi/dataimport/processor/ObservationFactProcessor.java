@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.processor;
 
@@ -48,6 +48,13 @@ public class ObservationFactProcessor implements ItemProcessor<CsvObservationFac
 	private JdbcTemplate template = null;
 	private AppJobContextProperties appJobContextProperties;
 	private Map<String, Integer> previouslySeenEncounter = new HashMap<>();
+	private PatientHelper patientHelper;
+	private EncounterHelper encounterHelper;
+	
+	public ObservationFactProcessor (PatientHelper patientHelper, EncounterHelper encounterHelper) {
+		this.patientHelper = patientHelper;
+		this.encounterHelper = encounterHelper;
+	}
 
 	public void setPatientNextValueCache(PatientNextValCache patientNextValCache) {
 		this.patientNextValCache = patientNextValCache;
@@ -76,11 +83,11 @@ public class ObservationFactProcessor implements ItemProcessor<CsvObservationFac
 		template = new JdbcTemplate(i2b2DemoDataSource);
 		
 		//get next patient id value
-		Integer patientIdNextVal = PatientHelper.getPatientIdNextValue(template);
+		Integer patientIdNextVal = patientHelper.getPatientIdNextValue(template);
 		patientNextValCache.setNextValue(patientIdNextVal);
 		
 		//get next encounter id value
-		Integer encounterIdNextVal = EncounterHelper.getEncounterIdNextValue(template);
+		Integer encounterIdNextVal = encounterHelper.getEncounterIdNextValue(template);
 		encounterNextValCache.setNextValue(encounterIdNextVal);
 		
 		// Get metadata properties that has calculated in precalculation step
@@ -94,15 +101,15 @@ public class ObservationFactProcessor implements ItemProcessor<CsvObservationFac
 		if (patientMappingCache.containsPatientID(item.getPatientID())) {
 			item.setPatientNum(patientMappingCache.getData(item.getPatientID()));
 		} else {
-			List<Integer> patientNums = PatientHelper.getPatientNums(template, item.getPatientID());
+			List<Integer> patientNums = patientHelper.getPatientNums(template, item.getPatientID());
 			if (!patientNums.isEmpty()) {
-				patientMappingCache.putData(item.getPatientID(), patientNums.get(0));
-				return null;
+				item.setPatientNum(patientNums.get(0));
 			}
-			
-			int nextVal = patientNextValCache.getNextVal();
-			item.setPatientNum(nextVal);
-			patientMappingCache.putData(item.getPatientID(), nextVal);
+			else {
+				int nextVal = patientNextValCache.getNextVal();
+				item.setPatientNum(nextVal);
+			}
+			patientMappingCache.putData(item.getPatientID(), item.getPatientNum());
 		}
 		
 		//Check if patient encounter id exists.
@@ -112,11 +119,13 @@ public class ObservationFactProcessor implements ItemProcessor<CsvObservationFac
 			if (previouslySeenEncounter.containsKey(item.getEncounterID())) {
 				item.setEncounterNum(previouslySeenEncounter.get(item.getEncounterID()));
 			} else {
-				List<Integer> encounterNums = EncounterHelper.getEncounterNums(template, item.getEncounterID());
+				List<Integer> encounterNums = encounterHelper.getEncounterNums(template, item.getEncounterID());
 				if (!encounterNums.isEmpty()) {
-					return null;
+					item.setEncounterNum(encounterNums.get(0));
 				}
-				item.setEncounterNum(encounterNextValCache.getNextVal());
+				else {
+					item.setEncounterNum(encounterNextValCache.getNextVal());
+				}
 				previouslySeenEncounter.put(item.getEncounterID(), item.getEncounterNum());
 			}
 		}

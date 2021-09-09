@@ -8,7 +8,7 @@
 # If a copy of the Healthcare Disclaimer was not distributed with this file, You
 # can obtain one at the project website https://github.com/igia.
 #
-# Copyright (C) 2018-2019 Persistent Systems, Inc.
+# Copyright (C) 2021-2022 Persistent Systems, Inc.
 #
 
 #Core vars
@@ -22,6 +22,7 @@ spring:
             commitInterval : 1000
             jdbcCursorReaderFetchSize: 1000
             validationFailSkipLimit: 100
+            enableNotExistsClause: false
     
     profiles:
       active: #spring.profiles.active#
@@ -48,6 +49,19 @@ i2b2:
         i2b2Separator: \
         conceptPath: concept_path
         appliedPath: \@
+    modifier:   
+        synonymCd: N
+        factTableColumn: modifier_cd
+        tableName: modifier_dimension
+        columnName: modifier_path
+        columnDataType: T
+        operator: LIKE
+        tableAccessCd: i2b2_DEMO
+        tableAccessName: I2B2
+        protectedAccess: N
+        i2b2Separator: \
+        conceptPath: modifier_path
+        appliedPath: \@
         
 #SFTP Configuration Details
 integration:
@@ -60,6 +74,8 @@ integration:
         appGroupTimeout: 3600000
         dataFileReleaseExpression: size() == 1
         conceptFileReleaseExpression: size() == 1
+    jdbc:
+        pollersFixedRate: 10000
         
 app:
     log:

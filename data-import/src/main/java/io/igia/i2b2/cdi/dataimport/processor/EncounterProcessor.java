@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.dataimport.processor;
 
@@ -36,6 +36,11 @@ public class EncounterProcessor implements ItemProcessor<CsvEncounter,CsvEncount
 	private PatientMappingCache patientMappingCache;
 	private JdbcTemplate template = null;
 	private AppJobContextProperties appJobContextProperties;
+	private EncounterHelper encounterHelper;
+	
+	public EncounterProcessor (EncounterHelper encounterHelper) {
+		this.encounterHelper = encounterHelper;
+	}
 	
 	public void setPatientMappingCache(PatientMappingCache patientMappingCache) {
 		this.patientMappingCache = patientMappingCache;
@@ -54,7 +59,7 @@ public class EncounterProcessor implements ItemProcessor<CsvEncounter,CsvEncount
 		template = new JdbcTemplate(i2b2DemoDataSource);
 		
 		//get next encounter id value
-		Integer encounterIdNextVal = EncounterHelper.getEncounterIdNextValue(template);
+		Integer encounterIdNextVal = encounterHelper.getEncounterIdNextValue(template);
 		encounterNextValCache.setNextValue(encounterIdNextVal);
 		
 		// Get metadata properties that has calculated in precalculation step
@@ -64,7 +69,7 @@ public class EncounterProcessor implements ItemProcessor<CsvEncounter,CsvEncount
 	@Override
 	public CsvEncounter process(CsvEncounter item) throws Exception {
 		
-		List<Integer> encounterNums = EncounterHelper.getEncounterNums(template, item.getEncounterID());
+		List<Integer> encounterNums = encounterHelper.getEncounterNums(template, item.getEncounterID());
 		if (!encounterNums.isEmpty()) {
 			return null;
 		}

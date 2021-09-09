@@ -8,9 +8,9 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
-package io.igia.i2b2.cdi.conceptimport.jobListener;
+package io.igia.i2b2.cdi.conceptimport.joblistener;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +30,7 @@ import io.igia.i2b2.cdi.common.config.AppBatchProperties;
 import io.igia.i2b2.cdi.common.config.ErrorLogProperties;
 import io.igia.i2b2.cdi.common.domain.AppJobContextProperties;
 import io.igia.i2b2.cdi.common.util.AppJobContext;
+import io.igia.i2b2.cdi.common.util.BatchJobSummary;
 import io.igia.i2b2.cdi.common.util.FileHelper;
 
 @Component
@@ -63,7 +64,10 @@ public class ConceptJobCompletionNotificationListener extends JobExecutionListen
 	public void afterJob(JobExecution jobExecution) {
 		JobCompletionNotification.afterJob(jobExecution);
 		
-		// Get metadata properties from previous job context and set to new job context
+		// Print summary of concept batch import job
+		log.info(BatchJobSummary.getConceptJobSummary(jobExecution));
+		
+		// Get job parameters
 		AppJobContextProperties appJobContextProperties = new AppJobContext().getJobContextPropertiesFromJobParameters(jobExecution);
 		
 		//Send errors records zip file to the sftp
@@ -75,7 +79,7 @@ public class ConceptJobCompletionNotificationListener extends JobExecutionListen
 			try {
 				FileUtils.deleteDirectory(deleteDir);
 			} catch (IOException e) {
-				log.error("Error while deleting directory");
+				log.error("Error while deleting directory : {}" , e);
 			}
 		}
 	}

@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.domain;
 
@@ -19,7 +19,8 @@ public enum DeleteDataQueries {
 	DEMOGRAPHICS("delete from nhp_patient_demographics"),
 	ENCOUNTERS("delete from nhp_patient_encounters"),
 	PROVIDER_REFERENCES("delete from nhp_patient_provider_reference"),
-	OBSERVATION_FACTS("delete from nhp_observation_facts");
+	OBSERVATION_FACTS("delete from nhp_observation_facts"),
+	DERIVED_CONCEPT_DEFINITION("delete from derived_concept_definition");
 	
 	private String query;
 

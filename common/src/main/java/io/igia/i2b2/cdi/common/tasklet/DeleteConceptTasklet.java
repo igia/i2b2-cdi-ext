@@ -8,7 +8,7 @@
  * If a copy of the Healthcare Disclaimer was not distributed with this file, You
  * can obtain one at the project website https://github.com/igia.
  *
- * Copyright (C) 2018-2019 Persistent Systems, Inc.
+ * Copyright (C) 2021-2022 Persistent Systems, Inc.
  */
 package io.igia.i2b2.cdi.common.tasklet;
 
@@ -40,6 +40,7 @@ public class DeleteConceptTasklet implements Tasklet {
 
 		jdbcTemplate.update(DeleteDataQueries.CONCEPTS.getQuery());
 		jdbcTemplate.update(DeleteDataQueries.CONCEPT_MAPPINGS.getQuery());
+		jdbcTemplate.update(DeleteDataQueries.DERIVED_CONCEPT_DEFINITION.getQuery());
 		return RepeatStatus.FINISHED;
 	}
 }
